@@ -2,27 +2,46 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ramenShops } from '../data/shops';
 
-const allRegions = Array.from(new Set(ramenShops.map((shop) => shop.region)));
-const allTypes = Array.from(new Set(ramenShops.map((shop) => shop.ramenType)));
+const allRegions = Array.from(new Set(ramenShops.map((shop) => shop.region))).sort();
 
 export function ShopsPage() {
+  const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
-  const [ramenType, setRamenType] = useState('');
-  const [rating, setRating] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const filteredShops = useMemo(() => {
-    return ramenShops.filter((shop) => {
-      const regionMatch = region ? shop.region === region : true;
-      const typeMatch = ramenType ? shop.ramenType === ramenType : true;
-      const ratingMatch = rating ? shop.rating >= Number(rating) : true;
-      return regionMatch && typeMatch && ratingMatch;
-    });
-  }, [region, ramenType, rating]);
+    const normalizedKeyword = keyword.trim().toLowerCase();
+
+    return [...ramenShops]
+      .filter((shop) => {
+        const regionMatch = region ? shop.region === region : true;
+        const keywordMatch = normalizedKeyword
+          ? [shop.name, shop.region, shop.ramenType]
+              .join(' ')
+              .toLowerCase()
+              .includes(normalizedKeyword)
+          : true;
+
+        return regionMatch && keywordMatch;
+      })
+      .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
+  }, [keyword, region, sortOrder]);
 
   return (
     <section>
       <h1>店舗一覧</h1>
       <form className="card search-form" aria-label="店舗検索フォーム">
+        <div>
+          <label htmlFor="keyword">キーワード</label>
+          <input
+            id="keyword"
+            type="search"
+            placeholder="店舗名・地域・ラーメン種類で検索"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+        </div>
+
         <div>
           <label htmlFor="region">地域</label>
           <select id="region" value={region} onChange={(e) => setRegion(e.target.value)}>
@@ -36,24 +55,14 @@ export function ShopsPage() {
         </div>
 
         <div>
-          <label htmlFor="ramenType">ラーメン種類</label>
-          <select id="ramenType" value={ramenType} onChange={(e) => setRamenType(e.target.value)}>
-            <option value="">すべて</option>
-            {allTypes.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="rating">評価</label>
-          <select id="rating" value={rating} onChange={(e) => setRating(e.target.value)}>
-            <option value="">指定なし</option>
-            <option value="4.0">4.0以上</option>
-            <option value="4.3">4.3以上</option>
-            <option value="4.5">4.5以上</option>
+          <label htmlFor="sortOrder">評価順</label>
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
+          >
+            <option value="desc">高い順</option>
+            <option value="asc">低い順</option>
           </select>
         </div>
       </form>
@@ -62,15 +71,27 @@ export function ShopsPage() {
 
       <div className="shop-list">
         {filteredShops.map((shop) => (
-          <article className="card" key={shop.id}>
-            <h2>{shop.name}</h2>
-            <p>
-              <strong>地域:</strong> {shop.region} / <strong>種類:</strong> {shop.ramenType}
-            </p>
-            <p>
-              <strong>評価:</strong> ⭐ {shop.rating} / <strong>営業時間:</strong>{' '}
-              {shop.businessHours}
-            </p>
+          <article className="card shop-card" key={shop.id}>
+            <div className="shop-card-header">
+              <h2>{shop.name}</h2>
+              <span className="rating-badge">⭐ {shop.rating.toFixed(1)}</span>
+            </div>
+
+            <dl className="shop-meta">
+              <div>
+                <dt>地域</dt>
+                <dd>{shop.region}</dd>
+              </div>
+              <div>
+                <dt>ラーメンの種類</dt>
+                <dd>{shop.ramenType}</dd>
+              </div>
+              <div>
+                <dt>営業時間</dt>
+                <dd>{shop.businessHours}</dd>
+              </div>
+            </dl>
+
             <p>
               <strong>住所:</strong> {shop.address}
             </p>
