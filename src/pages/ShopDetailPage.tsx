@@ -1,12 +1,13 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 
 export function ShopDetailPage() {
   const { id } = useParams();
-  const { shops } = useShops();
+  const navigate = useNavigate();
+  const { shops, deleteShop } = useShops();
   const shop = shops.find((item) => item.id === id);
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
 
   if (!shop) {
     return (
@@ -20,6 +21,21 @@ export function ShopDetailPage() {
   }
 
   const favorite = isFavorite(shop.id);
+
+  const handleDelete = () => {
+    const shouldDelete = window.confirm('この店舗を削除しますか？');
+    if (!shouldDelete) {
+      return;
+    }
+
+    const deleted = deleteShop(shop.id);
+    if (!deleted) {
+      return;
+    }
+
+    removeFavorite(shop.id);
+    navigate('/shops');
+  };
 
   return (
     <section className="detail-wrapper">
@@ -70,6 +86,9 @@ export function ShopDetailPage() {
         <Link to={`/shops/${shop.id}/edit`} className="button-secondary back-button">
           編集
         </Link>
+        <button type="button" className="button-danger back-button" onClick={handleDelete}>
+          削除
+        </button>
         <Link to="/shops" className="button-secondary back-button">
           一覧に戻る
         </Link>
