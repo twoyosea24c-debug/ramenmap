@@ -245,3 +245,53 @@ body {
     gap: 0.15rem;
   }
 }
+
+.detail-button {
+  display: inline-flex;
+  margin-top: 0.25rem;
+}
+
+.detail-wrapper {
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-wrapper h1 {
+  margin-bottom: 0;
+}
+
+.detail-card {
+  padding: 1.1rem;
+}
+
+.detail-list {
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.detail-list div {
+  display: grid;
+  gap: 0.3rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-list div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-list dt {
+  font-weight: 700;
+  color: #374151;
+}
+
+.detail-list dd {
+  margin: 0;
+  color: #111827;
+}
+
+.back-button {
+  justify-self: start;
+}
