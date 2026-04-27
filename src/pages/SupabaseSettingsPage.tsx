@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const getStatusLabel = (isConfigured: boolean) =>
@@ -31,6 +32,10 @@ export function SupabaseSettingsPage() {
           ? 'Supabase接続準備OK'
           : '.env.local に Supabase情報を設定してください'}
       </p>
+
+      <Link to="/settings/supabase-shops" className="button-secondary detail-button">
+        shopsテーブル読み込み確認へ
+      </Link>
     </section>
   );
 }
