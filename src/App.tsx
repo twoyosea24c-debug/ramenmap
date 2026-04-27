@@ -7,6 +7,7 @@ import { NewShopPage } from './pages/NewShopPage';
 import { ShopDetailPage } from './pages/ShopDetailPage';
 import { EditShopPage } from './pages/EditShopPage';
 import { ShopsPage } from './pages/ShopsPage';
+import { SupabaseSettingsPage } from './pages/SupabaseSettingsPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="shops/:id/edit" element={<EditShopPage />} />
         <Route path="regions" element={<RegionsPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
+        <Route path="settings/supabase" element={<SupabaseSettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
