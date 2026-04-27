@@ -10,3 +10,11 @@ export type RamenShop = {
 };
 
 export type ShopInput = Omit<RamenShop, 'id'>;
+
+
+export type SupabaseShopRow = RamenShop;
+
+export type SupabaseFavoriteRow = {
+  id: string;
+  shopId: RamenShop['id'];
+};
