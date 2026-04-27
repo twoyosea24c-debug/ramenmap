@@ -8,3 +8,5 @@ export type RamenShop = {
   address: string;
   recommendation: string;
 };
+
+export type ShopInput = Omit<RamenShop, 'id'>;

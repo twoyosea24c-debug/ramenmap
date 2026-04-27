@@ -1,6 +1,9 @@
 import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react';
-
-const FAVORITES_STORAGE_KEY = 'ramenmap:favorites';
+import {
+  addFavorite,
+  getFavorites,
+  removeFavorite as removeFavoriteFromStorage,
+} from '../services/shopStorageService';
 
 type FavoritesContextValue = {
   favoriteIds: string[];
@@ -11,55 +14,23 @@ type FavoritesContextValue = {
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
 
-function loadFavoritesFromStorage(): string[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter((value): value is string => typeof value === 'string');
-  } catch {
-    return [];
-  }
-}
-
 export function FavoritesProvider({ children }: PropsWithChildren) {
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => loadFavoritesFromStorage());
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => getFavorites());
 
   const value = useMemo<FavoritesContextValue>(
     () => ({
       favoriteIds,
       isFavorite: (shopId: string) => favoriteIds.includes(shopId),
       toggleFavorite: (shopId: string) => {
-        setFavoriteIds((prev) => {
-          const next = prev.includes(shopId)
-            ? prev.filter((id) => id !== shopId)
-            : [...prev, shopId];
+        const next = favoriteIds.includes(shopId)
+          ? removeFavoriteFromStorage(shopId)
+          : addFavorite(shopId);
 
-          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
-          return next;
-        });
+        setFavoriteIds(next);
       },
       removeFavorite: (shopId: string) => {
-        setFavoriteIds((prev) => {
-          if (!prev.includes(shopId)) {
-            return prev;
-          }
-
-          const next = prev.filter((id) => id !== shopId);
-          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
-          return next;
-        });
+        const next = removeFavoriteFromStorage(shopId);
+        setFavoriteIds(next);
       },
     }),
     [favoriteIds],
