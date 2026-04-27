@@ -8,6 +8,7 @@ import { ShopDetailPage } from './pages/ShopDetailPage';
 import { EditShopPage } from './pages/EditShopPage';
 import { ShopsPage } from './pages/ShopsPage';
 import { SupabaseSettingsPage } from './pages/SupabaseSettingsPage';
+import { SupabaseShopsPage } from './pages/SupabaseShopsPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="regions" element={<RegionsPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="settings/supabase" element={<SupabaseSettingsPage />} />
+        <Route path="settings/supabase-shops" element={<SupabaseShopsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

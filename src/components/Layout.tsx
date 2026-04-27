@@ -6,6 +6,7 @@ const navItems = [
   { to: '/regions', label: '地域別' },
   { to: '/favorites', label: 'お気に入り' },
   { to: '/settings/supabase', label: 'Supabase設定' },
+  { to: '/settings/supabase-shops', label: 'Supabase店舗確認' },
 ];
 
 export function Layout() {

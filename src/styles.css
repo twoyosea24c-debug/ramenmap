@@ -489,3 +489,17 @@ body {
   color: #b91c1c;
   font-weight: 700;
 }
+
+.supabase-shops-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.supabase-shop-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.supabase-shop-item h2 {
+  margin-top: 0;
+}
