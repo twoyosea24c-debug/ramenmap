@@ -81,7 +81,8 @@ body {
 }
 
 .button-primary,
-.button-secondary {
+.button-secondary,
+.button-danger {
   text-decoration: none;
   padding: 0.55rem 0.9rem;
   border-radius: 9px;
@@ -97,6 +98,16 @@ body {
   border: 1px solid #d1d5db;
   color: #1f2937;
   background: white;
+}
+
+.button-danger {
+  border: 1px solid #ef4444;
+  color: #991b1b;
+  background: #fff1f2;
+}
+
+.button-danger:hover {
+  background: #ffe4e6;
 }
 
 .grid-2 {
@@ -202,6 +213,25 @@ body {
   gap: 0.6rem;
   margin-top: 0.4rem;
   flex-wrap: wrap;
+}
+
+
+.button-primary,
+.button-secondary,
+.button-danger,
+.favorite-button {
+  border-width: 1px;
+  border-style: solid;
+  cursor: pointer;
+  font: inherit;
+}
+
+.button-primary {
+  border-color: #dc2626;
+}
+
+.button-secondary {
+  border-color: #d1d5db;
 }
 
 .favorite-button {

@@ -4,6 +4,7 @@ import type { RamenShop } from '../types';
 
 const CUSTOM_SHOPS_STORAGE_KEY = 'ramenmap:custom-shops';
 const EDITED_BASE_SHOPS_STORAGE_KEY = 'ramenmap:edited-base-shops';
+const DELETED_SHOP_IDS_STORAGE_KEY = 'ramenmap:deleted-shop-ids';
 
 type ShopInput = {
   name: string;
@@ -19,6 +20,7 @@ type ShopsContextValue = {
   shops: RamenShop[];
   addShop: (input: ShopInput) => RamenShop;
   updateShop: (id: string, input: ShopInput) => RamenShop | null;
+  deleteShop: (id: string) => boolean;
 };
 
 const ShopsContext = createContext<ShopsContextValue | undefined>(undefined);
@@ -40,6 +42,28 @@ function loadShopsFromStorage(key: string): RamenShop[] {
     }
 
     return parsed.filter(isRamenShop);
+  } catch {
+    return [];
+  }
+}
+
+function loadDeletedShopIdsFromStorage(): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const raw = window.localStorage.getItem(DELETED_SHOP_IDS_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((value): value is string => typeof value === 'string');
   } catch {
     return [];
   }
@@ -79,13 +103,14 @@ export function ShopsProvider({ children }: PropsWithChildren) {
   const [editedBaseShops, setEditedBaseShops] = useState<RamenShop[]>(() =>
     loadShopsFromStorage(EDITED_BASE_SHOPS_STORAGE_KEY),
   );
+  const [deletedShopIds, setDeletedShopIds] = useState<string[]>(() => loadDeletedShopIdsFromStorage());
 
   const value = useMemo<ShopsContextValue>(
     () => ({
       shops: [
         ...ramenShops.map((baseShop) => editedBaseShops.find((edited) => edited.id === baseShop.id) ?? baseShop),
         ...customShops,
-      ],
+      ].filter((shop) => !deletedShopIds.includes(shop.id)),
       addShop: (input: ShopInput) => {
         const newShop: RamenShop = {
           id: createShopId(input.name),
@@ -130,8 +155,26 @@ export function ShopsProvider({ children }: PropsWithChildren) {
 
         return updatedShop;
       },
+      deleteShop: (id: string) => {
+        const exists =
+          ramenShops.some((shop) => shop.id === id) ||
+          customShops.some((shop) => shop.id === id) ||
+          editedBaseShops.some((shop) => shop.id === id);
+
+        if (!exists || deletedShopIds.includes(id)) {
+          return false;
+        }
+
+        setDeletedShopIds((prev) => {
+          const next = [...prev, id];
+          window.localStorage.setItem(DELETED_SHOP_IDS_STORAGE_KEY, JSON.stringify(next));
+          return next;
+        });
+
+        return true;
+      },
     }),
-    [customShops, editedBaseShops],
+    [customShops, editedBaseShops, deletedShopIds],
   );
 
   return <ShopsContext.Provider value={value}>{children}</ShopsContext.Provider>;

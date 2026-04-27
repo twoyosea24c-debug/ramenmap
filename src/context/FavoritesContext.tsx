@@ -6,6 +6,7 @@ type FavoritesContextValue = {
   favoriteIds: string[];
   isFavorite: (shopId: string) => boolean;
   toggleFavorite: (shopId: string) => void;
+  removeFavorite: (shopId: string) => void;
 };
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
@@ -45,6 +46,17 @@ export function FavoritesProvider({ children }: PropsWithChildren) {
             ? prev.filter((id) => id !== shopId)
             : [...prev, shopId];
 
+          window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
+          return next;
+        });
+      },
+      removeFavorite: (shopId: string) => {
+        setFavoriteIds((prev) => {
+          if (!prev.includes(shopId)) {
+            return prev;
+          }
+
+          const next = prev.filter((id) => id !== shopId);
           window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(next));
           return next;
         });

@@ -7,8 +7,8 @@ export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const { shops } = useShops();
+  const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
+  const { shops, deleteShop } = useShops();
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
@@ -29,6 +29,20 @@ export function ShopsPage() {
       })
       .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
   }, [keyword, region, sortOrder, shops]);
+
+  const handleDelete = (shopId: string) => {
+    const shouldDelete = window.confirm('この店舗を削除しますか？');
+    if (!shouldDelete) {
+      return;
+    }
+
+    const deleted = deleteShop(shopId);
+    if (!deleted) {
+      return;
+    }
+
+    removeFavorite(shopId);
+  };
 
   return (
     <section>
@@ -122,6 +136,9 @@ export function ShopsPage() {
                 <Link to={`/shops/${shop.id}/edit`} className="button-secondary detail-button">
                   編集
                 </Link>
+                <button type="button" className="button-danger detail-button" onClick={() => handleDelete(shop.id)}>
+                  削除
+                </button>
               </div>
             </article>
           );
