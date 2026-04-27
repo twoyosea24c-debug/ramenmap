@@ -119,6 +119,9 @@ export function ShopsPage() {
                 <Link to={`/shops/${shop.id}`} className="button-primary detail-button">
                   詳細を見る
                 </Link>
+                <Link to={`/shops/${shop.id}/edit`} className="button-secondary detail-button">
+                  編集
+                </Link>
               </div>
             </article>
           );

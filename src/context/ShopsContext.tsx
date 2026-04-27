@@ -2,9 +2,10 @@ import { createContext, useContext, useMemo, useState, type PropsWithChildren } 
 import { ramenShops } from '../data/shops';
 import type { RamenShop } from '../types';
 
-const SHOPS_STORAGE_KEY = 'ramenmap:custom-shops';
+const CUSTOM_SHOPS_STORAGE_KEY = 'ramenmap:custom-shops';
+const EDITED_BASE_SHOPS_STORAGE_KEY = 'ramenmap:edited-base-shops';
 
-type NewShopInput = {
+type ShopInput = {
   name: string;
   region: string;
   address: string;
@@ -16,17 +17,18 @@ type NewShopInput = {
 
 type ShopsContextValue = {
   shops: RamenShop[];
-  addShop: (input: NewShopInput) => RamenShop;
+  addShop: (input: ShopInput) => RamenShop;
+  updateShop: (id: string, input: ShopInput) => RamenShop | null;
 };
 
 const ShopsContext = createContext<ShopsContextValue | undefined>(undefined);
 
-function loadCustomShopsFromStorage(): RamenShop[] {
+function loadShopsFromStorage(key: string): RamenShop[] {
   if (typeof window === 'undefined') {
     return [];
   }
 
-  const raw = window.localStorage.getItem(SHOPS_STORAGE_KEY);
+  const raw = window.localStorage.getItem(key);
   if (!raw) {
     return [];
   }
@@ -73,12 +75,18 @@ function createShopId(name: string): string {
 }
 
 export function ShopsProvider({ children }: PropsWithChildren) {
-  const [customShops, setCustomShops] = useState<RamenShop[]>(() => loadCustomShopsFromStorage());
+  const [customShops, setCustomShops] = useState<RamenShop[]>(() => loadShopsFromStorage(CUSTOM_SHOPS_STORAGE_KEY));
+  const [editedBaseShops, setEditedBaseShops] = useState<RamenShop[]>(() =>
+    loadShopsFromStorage(EDITED_BASE_SHOPS_STORAGE_KEY),
+  );
 
   const value = useMemo<ShopsContextValue>(
     () => ({
-      shops: [...ramenShops, ...customShops],
-      addShop: (input: NewShopInput) => {
+      shops: [
+        ...ramenShops.map((baseShop) => editedBaseShops.find((edited) => edited.id === baseShop.id) ?? baseShop),
+        ...customShops,
+      ],
+      addShop: (input: ShopInput) => {
         const newShop: RamenShop = {
           id: createShopId(input.name),
           ...input,
@@ -86,14 +94,44 @@ export function ShopsProvider({ children }: PropsWithChildren) {
 
         setCustomShops((prev) => {
           const next = [...prev, newShop];
-          window.localStorage.setItem(SHOPS_STORAGE_KEY, JSON.stringify(next));
+          window.localStorage.setItem(CUSTOM_SHOPS_STORAGE_KEY, JSON.stringify(next));
           return next;
         });
 
         return newShop;
       },
+      updateShop: (id: string, input: ShopInput) => {
+        const updatedShop: RamenShop = { id, ...input };
+        const isBaseShop = ramenShops.some((shop) => shop.id === id);
+
+        if (isBaseShop) {
+          setEditedBaseShops((prev) => {
+            const next = prev.some((shop) => shop.id === id)
+              ? prev.map((shop) => (shop.id === id ? updatedShop : shop))
+              : [...prev, updatedShop];
+
+            window.localStorage.setItem(EDITED_BASE_SHOPS_STORAGE_KEY, JSON.stringify(next));
+            return next;
+          });
+
+          return updatedShop;
+        }
+
+        const isCustomShop = customShops.some((shop) => shop.id === id);
+        if (!isCustomShop) {
+          return null;
+        }
+
+        setCustomShops((prev) => {
+          const next = prev.map((shop) => (shop.id === id ? updatedShop : shop));
+          window.localStorage.setItem(CUSTOM_SHOPS_STORAGE_KEY, JSON.stringify(next));
+          return next;
+        });
+
+        return updatedShop;
+      },
     }),
-    [customShops],
+    [customShops, editedBaseShops],
   );
 
   return <ShopsContext.Provider value={value}>{children}</ShopsContext.Provider>;

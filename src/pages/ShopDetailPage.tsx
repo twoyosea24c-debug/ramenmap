@@ -67,6 +67,9 @@ export function ShopDetailPage() {
         >
           {favorite ? 'お気に入り済み' : 'お気に入りに追加'}
         </button>
+        <Link to={`/shops/${shop.id}/edit`} className="button-secondary back-button">
+          編集
+        </Link>
         <Link to="/shops" className="button-secondary back-button">
           一覧に戻る
         </Link>
