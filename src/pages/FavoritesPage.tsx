@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
-import { ramenShops } from '../data/shops';
+import { useShops } from '../context/ShopsContext';
 
 export function FavoritesPage() {
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
+  const { shops } = useShops();
 
-  const favoriteShops = ramenShops.filter((shop) => favoriteIds.includes(shop.id));
+  const favoriteShops = shops.filter((shop) => favoriteIds.includes(shop.id));
 
   return (
     <section>
