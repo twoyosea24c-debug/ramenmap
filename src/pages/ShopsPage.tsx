@@ -96,7 +96,7 @@ export function ShopsPage() {
               <strong>住所:</strong> {shop.address}
             </p>
             <p>{shop.recommendation}</p>
-            <Link to={`/shops/${shop.id}`} className="text-link">
+            <Link to={`/shops/${shop.id}`} className="button-primary detail-button">
               詳細を見る
             </Link>
           </article>

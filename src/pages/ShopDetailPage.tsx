@@ -2,51 +2,60 @@ import { Link, useParams } from 'react-router-dom';
 import { ramenShops } from '../data/shops';
 
 export function ShopDetailPage() {
-  const { shopId } = useParams();
-  const shop = ramenShops.find((item) => item.id === shopId);
+  const { id } = useParams();
+  const shop = ramenShops.find((item) => item.id === id);
 
   if (!shop) {
     return (
-      <section className="card">
-        <h1>店舗が見つかりませんでした</h1>
-        <Link to="/shops" className="text-link">
-          店舗一覧へ戻る
+      <section className="card detail-wrapper">
+        <h1>店舗が見つかりません</h1>
+        <Link to="/shops" className="button-secondary back-button">
+          一覧に戻る
         </Link>
       </section>
     );
   }
 
   return (
-    <section>
+    <section className="detail-wrapper">
       <h1>{shop.name}</h1>
-      <div className="grid-2">
-        <article className="card">
-          <h2>店舗情報</h2>
-          <p>
-            <strong>地域:</strong> {shop.region}
-          </p>
-          <p>
-            <strong>ラーメンの種類:</strong> {shop.ramenType}
-          </p>
-          <p>
-            <strong>評価:</strong> ⭐ {shop.rating}
-          </p>
-          <p>
-            <strong>営業時間:</strong> {shop.businessHours}
-          </p>
-          <p>
-            <strong>住所:</strong> {shop.address}
-          </p>
-          <p>
-            <strong>おすすめポイント:</strong> {shop.recommendation}
-          </p>
-        </article>
 
-        <article className="card map-placeholder">
-          <h2>地図エリア（仮）</h2>
-          <div className="mock-map">GoogleマップAPI導入前の仮表示エリア</div>
-        </article>
-      </div>
+      <article className="card detail-card">
+        <dl className="detail-list">
+          <div>
+            <dt>店舗名</dt>
+            <dd>{shop.name}</dd>
+          </div>
+          <div>
+            <dt>地域</dt>
+            <dd>{shop.region}</dd>
+          </div>
+          <div>
+            <dt>住所</dt>
+            <dd>{shop.address}</dd>
+          </div>
+          <div>
+            <dt>ラーメンの種類</dt>
+            <dd>{shop.ramenType}</dd>
+          </div>
+          <div>
+            <dt>評価</dt>
+            <dd>⭐ {shop.rating.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>営業時間</dt>
+            <dd>{shop.businessHours}</dd>
+          </div>
+          <div>
+            <dt>おすすめポイント</dt>
+            <dd>{shop.recommendation}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <Link to="/shops" className="button-secondary back-button">
+        一覧に戻る
+      </Link>
     </section>
   );
 }
