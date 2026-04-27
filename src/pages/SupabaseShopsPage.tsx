@@ -32,34 +32,95 @@ export function SupabaseShopsPage() {
   const [shops, setShops] = useState<SupabaseShop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState({
+    isUrlConfigured: Boolean(import.meta.env.VITE_SUPABASE_URL),
+    isApiKeyConfigured: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
+    isClientReady: Boolean(supabase),
+  });
 
   useEffect(() => {
+    let isCancelled = false;
+
     const loadShops = async () => {
-      if (!isSupabaseConfigured || !supabase) {
-        setErrorMessage(
-          'Supabase未設定です。.env.local に VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を設定してください。',
-        );
-        setIsLoading(false);
-        return;
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const timeoutMs = 10_000;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      try {
+        const isUrlConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL);
+        const isApiKeyConfigured = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+        const isClientReady = Boolean(supabase);
+
+        if (!isCancelled) {
+          setDebugInfo({
+            isUrlConfigured,
+            isApiKeyConfigured,
+            isClientReady,
+          });
+        }
+
+        if (!isUrlConfigured) {
+          throw new Error('Supabase URL が未設定です');
+        }
+
+        if (!isApiKeyConfigured) {
+          throw new Error('Supabase API Key が未設定です');
+        }
+
+        if (!isSupabaseConfigured || !supabase || !isClientReady) {
+          throw new Error('Supabaseクライアントを初期化できません');
+        }
+
+        const shopsPromise = supabase
+          .from('shops')
+          .select(columns.join(','))
+          .order('created_at', { ascending: true });
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('データ取得がタイムアウトしました（10秒）'));
+          }, timeoutMs);
+        });
+
+        const { data, error } = await Promise.race([shopsPromise, timeoutPromise]);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const fetchedShops = (data ?? []) as SupabaseShop[];
+        if (fetchedShops.length === 0) {
+          setShops([]);
+          setErrorMessage('shops テーブルにデータがありません');
+          return;
+        }
+
+        if (!isCancelled) {
+          setShops(fetchedShops);
+          setErrorMessage(null);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setShops([]);
+          setErrorMessage(
+            error instanceof Error ? error.message : 'データ取得中に不明なエラーが発生しました',
+          );
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
-
-      const { data, error } = await supabase
-        .from('shops')
-        .select(columns.join(','))
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        setErrorMessage(`データ取得に失敗しました: ${error.message}`);
-        setShops([]);
-      } else {
-        setErrorMessage(null);
-        setShops((data ?? []) as SupabaseShop[]);
-      }
-
-      setIsLoading(false);
     };
 
     void loadShops();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   return (
@@ -72,6 +133,20 @@ export function SupabaseShopsPage() {
 
       {isLoading ? <p>読み込み中...</p> : null}
       {errorMessage ? <p className="status-error">{errorMessage}</p> : null}
+      <dl className="status-list">
+        <div>
+          <dt>Supabase URL</dt>
+          <dd>{debugInfo.isUrlConfigured ? '設定済み' : '未設定'}</dd>
+        </div>
+        <div>
+          <dt>Supabase API Key</dt>
+          <dd>{debugInfo.isApiKeyConfigured ? '設定済み' : '未設定'}</dd>
+        </div>
+        <div>
+          <dt>Supabaseクライアント</dt>
+          <dd>{debugInfo.isClientReady ? '初期化済み' : '未初期化'}</dd>
+        </div>
+      </dl>
 
       {!isLoading && !errorMessage ? (
         <>
