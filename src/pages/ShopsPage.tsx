@@ -1,20 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
-import { ramenShops } from '../data/shops';
-
-const allRegions = Array.from(new Set(ramenShops.map((shop) => shop.region))).sort();
+import { useShops } from '../context/ShopsContext';
 
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { shops } = useShops();
+
+  const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
   const filteredShops = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return [...ramenShops]
+    return [...shops]
       .filter((shop) => {
         const regionMatch = region ? shop.region === region : true;
         const keywordMatch = normalizedKeyword
@@ -27,11 +28,16 @@ export function ShopsPage() {
         return regionMatch && keywordMatch;
       })
       .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
-  }, [keyword, region, sortOrder]);
+  }, [keyword, region, sortOrder, shops]);
 
   return (
     <section>
-      <h1>店舗一覧</h1>
+      <div className="page-header">
+        <h1>店舗一覧</h1>
+        <Link to="/shops/new" className="button-primary add-shop-button">
+          店舗を追加
+        </Link>
+      </div>
       <form className="card search-form" aria-label="店舗検索フォーム">
         <div>
           <label htmlFor="keyword">キーワード</label>

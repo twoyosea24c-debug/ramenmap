@@ -3,14 +3,17 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { ShopsProvider } from './context/ShopsContext';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <FavoritesProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </FavoritesProvider>
+    <ShopsProvider>
+      <FavoritesProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </FavoritesProvider>
+    </ShopsProvider>
   </React.StrictMode>,
 );

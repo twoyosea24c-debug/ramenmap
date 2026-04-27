@@ -1,10 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
-import { ramenShops } from '../data/shops';
+import { useShops } from '../context/ShopsContext';
 
 export function ShopDetailPage() {
   const { id } = useParams();
-  const shop = ramenShops.find((item) => item.id === id);
+  const { shops } = useShops();
+  const shop = shops.find((item) => item.id === id);
   const { isFavorite, toggleFavorite } = useFavorites();
 
   if (!shop) {
