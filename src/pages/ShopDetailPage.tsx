@@ -1,9 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
+import { useFavorites } from '../context/FavoritesContext';
 import { ramenShops } from '../data/shops';
 
 export function ShopDetailPage() {
   const { id } = useParams();
   const shop = ramenShops.find((item) => item.id === id);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   if (!shop) {
     return (
@@ -15,6 +17,8 @@ export function ShopDetailPage() {
       </section>
     );
   }
+
+  const favorite = isFavorite(shop.id);
 
   return (
     <section className="detail-wrapper">
@@ -53,9 +57,19 @@ export function ShopDetailPage() {
         </dl>
       </article>
 
-      <Link to="/shops" className="button-secondary back-button">
-        一覧に戻る
-      </Link>
+      <div className="detail-actions">
+        <button
+          type="button"
+          className={favorite ? 'favorite-button is-active' : 'favorite-button'}
+          onClick={() => toggleFavorite(shop.id)}
+          aria-pressed={favorite}
+        >
+          {favorite ? 'お気に入り済み' : 'お気に入りに追加'}
+        </button>
+        <Link to="/shops" className="button-secondary back-button">
+          一覧に戻る
+        </Link>
+      </div>
     </section>
   );
 }
