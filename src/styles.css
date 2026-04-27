@@ -451,3 +451,41 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.status-panel {
+  max-width: 720px;
+}
+
+.status-list {
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.status-list div {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  background: #f9fafb;
+}
+
+.status-list dt {
+  font-weight: 700;
+}
+
+.status-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.status-ok {
+  color: #166534;
+  font-weight: 700;
+}
+
+.status-error {
+  color: #b91c1c;
+  font-weight: 700;
+}
