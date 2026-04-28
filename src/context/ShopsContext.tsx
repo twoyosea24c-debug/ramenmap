@@ -185,7 +185,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
             return nextBaseShops;
           });
 
-          updateShopInStorage(id, updatedShop, baseShops);
+          updateShopInStorage(id, input, baseShops);
 
           return {
             shop: updatedShop,

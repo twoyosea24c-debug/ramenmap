@@ -8,11 +8,14 @@ export type RamenShop = {
   address: string;
   recommendation: string;
   imageUrl?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
-export type ShopInput = Omit<RamenShop, 'id'>;
+export type ShopInput = Omit<RamenShop, 'id' | 'latitude' | 'longitude'> & {
+  latitude: number | null;
+  longitude: number | null;
+};
 
 export type SupabaseShopRow = {
   id: string;

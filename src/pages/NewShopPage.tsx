@@ -124,8 +124,8 @@ export function NewShopPage() {
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
         recommendation: values.recommendation.trim(),
-        latitude: values.latitude.trim() ? Number(values.latitude) : undefined,
-        longitude: values.longitude.trim() ? Number(values.longitude) : undefined,
+        latitude: values.latitude.trim() ? Number(values.latitude) : null,
+        longitude: values.longitude.trim() ? Number(values.longitude) : null,
         imageUrl,
       });
 
