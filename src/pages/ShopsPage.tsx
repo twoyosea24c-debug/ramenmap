@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
+import { useAuth } from '../context/AuthContext';
 
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
@@ -9,6 +10,7 @@ export function ShopsPage() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
   const { shops, deleteShop, isLoading, loadError } = useShops();
+  const { isAdmin } = useAuth();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,9 +63,11 @@ export function ShopsPage() {
     <section>
       <div className="page-header">
         <h1>店舗一覧</h1>
-        <Link to="/shops/new" className="button-primary add-shop-button">
-          店舗を追加
-        </Link>
+        {isAdmin ? (
+          <Link to="/shops/new" className="button-primary add-shop-button">
+            店舗を追加
+          </Link>
+        ) : null}
       </div>
       <form className="card search-form" aria-label="店舗検索フォーム">
         <div>
@@ -149,12 +153,20 @@ export function ShopsPage() {
                 <Link to={`/shops/${shop.id}`} className="button-primary detail-button">
                   詳細を見る
                 </Link>
-                <Link to={`/shops/${shop.id}/edit`} className="button-secondary detail-button">
-                  編集
-                </Link>
-                <button type="button" className="button-danger detail-button" onClick={() => void handleDelete(shop.id)}>
-                  削除
-                </button>
+                {isAdmin ? (
+                  <>
+                    <Link to={`/shops/${shop.id}/edit`} className="button-secondary detail-button">
+                      編集
+                    </Link>
+                    <button
+                      type="button"
+                      className="button-danger detail-button"
+                      onClick={() => void handleDelete(shop.id)}
+                    >
+                      削除
+                    </button>
+                  </>
+                ) : null}
               </div>
             </article>
           );

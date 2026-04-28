@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useShops } from '../context/ShopsContext';
+import { useAuth } from '../context/AuthContext';
 
 type ShopFormValues = {
   name: string;
@@ -18,6 +19,7 @@ export function EditShopPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { shops, updateShop } = useShops();
+  const { isAdmin } = useAuth();
   const shop = shops.find((item) => item.id === id);
 
   const initialValues = useMemo<ShopFormValues>(
@@ -82,6 +84,11 @@ export function EditShopPage() {
       return;
     }
 
+    if (!isAdmin) {
+      setSubmitError('管理者のみ操作できます。');
+      return;
+    }
+
     setSubmitError(null);
 
     try {
@@ -97,8 +104,9 @@ export function EditShopPage() {
 
       sessionStorage.setItem('ramenmap:update-shop-flash', result.message);
       navigate(`/shops/${result.shop.id}`);
-    } catch {
-      setSubmitError('更新に失敗しました。入力内容を確認して再度お試しください。');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '更新に失敗しました。';
+      setSubmitError(message);
     }
   };
 

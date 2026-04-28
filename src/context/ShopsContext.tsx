@@ -131,14 +131,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Supabase への保存に失敗しました';
           console.error('[ShopsProvider] Failed to save shop to Supabase:', message);
-
-          const fallbackShop = addShopToStorage(input);
-          setShops(getShops(baseShops));
-          return {
-            shop: fallbackShop,
-            savedTo: 'localStorage',
-            message: `${message}。ブラウザに保存しました。`,
-          };
+          throw new Error(message);
         }
       },
       updateShop: async (id: string, input: ShopInput) => {
@@ -174,18 +167,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Supabase への更新に失敗しました';
           console.error('[ShopsProvider] Failed to update shop in Supabase:', message);
-
-          const fallbackUpdatedShop = updateShopInStorage(id, input, baseShops);
-          if (!fallbackUpdatedShop) {
-            throw new Error(`${message}。さらにブラウザへの保存にも失敗しました。`);
-          }
-
-          setShops(getShops(baseShops));
-          return {
-            shop: fallbackUpdatedShop,
-            savedTo: 'localStorage',
-            message: `${message}。ブラウザに更新内容を保存しました。`,
-          };
+          throw new Error(message);
         }
       },
       deleteShop: async (id: string) => {
@@ -228,21 +210,10 @@ export function ShopsProvider({ children }: PropsWithChildren) {
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Supabase からの削除に失敗しました';
           console.error('[ShopsProvider] Failed to delete shop in Supabase:', message);
-
-          const fallbackDeletedShop = deleteShopFromStorage(id, baseShops);
-          if (!fallbackDeletedShop) {
-            return {
-              deleted: false,
-              savedTo: 'localStorage',
-              message: `${message}。さらにブラウザからの削除にも失敗しました。`,
-            };
-          }
-
-          setShops(getShops(baseShops));
           return {
-            deleted: true,
-            savedTo: 'localStorage',
-            message: `${message}。ブラウザから削除しました。`,
+            deleted: false,
+            savedTo: 'supabase',
+            message,
           };
         }
       },

@@ -9,6 +9,8 @@ import { EditShopPage } from './pages/EditShopPage';
 import { ShopsPage } from './pages/ShopsPage';
 import { SupabaseSettingsPage } from './pages/SupabaseSettingsPage';
 import { SupabaseShopsPage } from './pages/SupabaseShopsPage';
+import { LoginPage } from './pages/LoginPage';
+import { RequireAdmin } from './components/RequireAdmin';
 
 function App() {
   return (
@@ -16,11 +18,26 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="shops" element={<ShopsPage />} />
-        <Route path="shops/new" element={<NewShopPage />} />
+        <Route
+          path="shops/new"
+          element={
+            <RequireAdmin>
+              <NewShopPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="shops/:id" element={<ShopDetailPage />} />
-        <Route path="shops/:id/edit" element={<EditShopPage />} />
+        <Route
+          path="shops/:id/edit"
+          element={
+            <RequireAdmin>
+              <EditShopPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="regions" element={<RegionsPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
+        <Route path="login" element={<LoginPage />} />
         <Route path="settings/supabase" element={<SupabaseSettingsPage />} />
         <Route path="settings/supabase-shops" element={<SupabaseShopsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

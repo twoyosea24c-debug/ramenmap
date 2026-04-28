@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
+import { useAuth } from '../context/AuthContext';
 
 export function ShopDetailPage() {
   const { id } = useParams();
@@ -9,6 +10,7 @@ export function ShopDetailPage() {
   const { shops, deleteShop } = useShops();
   const shop = shops.find((item) => item.id === id);
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
+  const { isAdmin } = useAuth();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,12 +100,16 @@ export function ShopDetailPage() {
         >
           {favorite ? 'お気に入り済み' : 'お気に入りに追加'}
         </button>
-        <Link to={`/shops/${shop.id}/edit`} className="button-secondary back-button">
-          編集
-        </Link>
-        <button type="button" className="button-danger back-button" onClick={() => void handleDelete()}>
-          削除
-        </button>
+        {isAdmin ? (
+          <>
+            <Link to={`/shops/${shop.id}/edit`} className="button-secondary back-button">
+              編集
+            </Link>
+            <button type="button" className="button-danger back-button" onClick={() => void handleDelete()}>
+              削除
+            </button>
+          </>
+        ) : null}
         <Link to="/shops" className="button-secondary back-button">
           一覧に戻る
         </Link>
