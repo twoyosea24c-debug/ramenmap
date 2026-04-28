@@ -41,7 +41,7 @@ function App() {
         <Route
           path="settings/supabase"
           element={
-            <RequireAdmin>
+            <RequireAdmin redirectOnDeniedTo="/">
               <SupabaseSettingsPage />
             </RequireAdmin>
           }
@@ -49,7 +49,7 @@ function App() {
         <Route
           path="settings/supabase-shops"
           element={
-            <RequireAdmin>
+            <RequireAdmin redirectOnDeniedTo="/">
               <SupabaseShopsPage />
             </RequireAdmin>
           }
