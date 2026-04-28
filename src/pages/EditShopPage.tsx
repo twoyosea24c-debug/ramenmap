@@ -34,8 +34,8 @@ export function EditShopPage() {
       rating: shop ? String(shop.rating) : '',
       businessHours: shop?.businessHours ?? '',
       recommendation: shop?.recommendation ?? '',
-      latitude: shop?.latitude !== undefined ? String(shop.latitude) : '',
-      longitude: shop?.longitude !== undefined ? String(shop.longitude) : '',
+      latitude: shop?.latitude != null ? String(shop.latitude) : '',
+      longitude: shop?.longitude != null ? String(shop.longitude) : '',
     }),
     [shop],
   );
@@ -133,8 +133,8 @@ export function EditShopPage() {
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
         recommendation: values.recommendation.trim(),
-        latitude: values.latitude.trim() ? Number(values.latitude) : undefined,
-        longitude: values.longitude.trim() ? Number(values.longitude) : undefined,
+        latitude: values.latitude.trim() ? Number(values.latitude) : null,
+        longitude: values.longitude.trim() ? Number(values.longitude) : null,
         imageUrl,
       });
 

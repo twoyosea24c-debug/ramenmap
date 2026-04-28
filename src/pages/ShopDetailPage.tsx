@@ -37,7 +37,7 @@ export function ShopDetailPage() {
   }
 
   const favorite = isFavorite(shop.id);
-  const hasCoordinates = shop.latitude !== undefined && shop.longitude !== undefined;
+  const hasCoordinates = shop.latitude != null && shop.longitude != null;
   const mapSrc = hasCoordinates
     ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(googleMapsApiKey ?? '')}&q=${encodeURIComponent(`${shop.latitude},${shop.longitude}`)}`
     : '';
