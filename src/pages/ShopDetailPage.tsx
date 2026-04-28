@@ -37,6 +37,11 @@ export function ShopDetailPage() {
   const favorite = isFavorite(shop.id);
 
   const handleDelete = async () => {
+    if (!isAdmin) {
+      setFlashMessage('管理者のみ削除できます。');
+      return;
+    }
+
     const shouldDelete = window.confirm('この店舗を削除しますか？');
     if (!shouldDelete) {
       return;
