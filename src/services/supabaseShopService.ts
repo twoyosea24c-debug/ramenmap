@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import type { RamenShop, ShopInput, SupabaseShopInsertRow, SupabaseShopRow } from '../types';
+import type { RamenShop, ShopInput, SupabaseShopInsertRow, SupabaseShopRow, SupabaseShopUpdateRow } from '../types';
 
 const columns = ['id', 'name', 'area', 'address', 'ramen_type', 'rating', 'business_hours', 'recommendation'] as const;
 
@@ -44,6 +44,19 @@ function mapInputToSupabaseRow(input: ShopInput): SupabaseShopInsertRow {
     rating: clampRating(input.rating),
     business_hours: input.businessHours,
     recommendation: input.recommendation,
+  };
+}
+
+function mapInputToSupabaseUpdateRow(input: ShopInput): SupabaseShopUpdateRow {
+  return {
+    name: input.name,
+    area: input.region,
+    address: input.address,
+    ramen_type: input.ramenType,
+    rating: clampRating(input.rating),
+    business_hours: input.businessHours,
+    recommendation: input.recommendation,
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -103,6 +116,50 @@ export async function insertSupabaseShop(input: ShopInput): Promise<RamenShop> {
 
   if (!firstRow) {
     throw new Error('Supabase への保存結果が取得できませんでした');
+  }
+
+  return mapSupabaseRowToShop(firstRow);
+}
+
+export async function updateSupabaseShop(id: string, input: ShopInput): Promise<RamenShop> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!isSupabaseConfigured || !supabase || !supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase が未設定です');
+  }
+
+  const row = mapInputToSupabaseUpdateRow(input);
+  const response = await fetch(`${supabaseUrl}/rest/v1/shops?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(row),
+  });
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const body: unknown = await response.json();
+      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
+        detail = body.message;
+      }
+    } catch {
+      // ignore and fallback to status text
+    }
+
+    throw new Error(`Supabase への更新に失敗しました: ${detail}`);
+  }
+
+  const updatedRows = (await response.json()) as SupabaseShopRow[];
+  const firstRow = updatedRows[0];
+
+  if (!firstRow) {
+    throw new Error('Supabase の更新結果が取得できませんでした');
   }
 
   return mapSupabaseRowToShop(firstRow);

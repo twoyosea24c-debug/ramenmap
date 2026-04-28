@@ -7,10 +7,16 @@ import {
   getShops,
   updateShop as updateShopInStorage,
 } from '../services/shopStorageService';
-import { fetchSupabaseShops, insertSupabaseShop } from '../services/supabaseShopService';
+import { fetchSupabaseShops, insertSupabaseShop, updateSupabaseShop } from '../services/supabaseShopService';
 import type { RamenShop, ShopInput } from '../types';
 
 type AddShopResult = {
+  shop: RamenShop;
+  savedTo: 'supabase' | 'localStorage';
+  message: string;
+};
+
+type UpdateShopResult = {
   shop: RamenShop;
   savedTo: 'supabase' | 'localStorage';
   message: string;
@@ -21,7 +27,7 @@ type ShopsContextValue = {
   isLoading: boolean;
   loadError: string | null;
   addShop: (input: ShopInput) => Promise<AddShopResult>;
-  updateShop: (id: string, input: ShopInput) => RamenShop | null;
+  updateShop: (id: string, input: ShopInput) => Promise<UpdateShopResult>;
   deleteShop: (id: string) => boolean;
 };
 
@@ -129,14 +135,52 @@ export function ShopsProvider({ children }: PropsWithChildren) {
           };
         }
       },
-      updateShop: (id: string, input: ShopInput) => {
-        const updatedShop = updateShopInStorage(id, input, baseShops);
-        if (!updatedShop) {
-          return null;
+      updateShop: async (id: string, input: ShopInput) => {
+        if (!isSupabaseConfigured) {
+          const updatedLocalShop = updateShopInStorage(id, input, baseShops);
+          if (!updatedLocalShop) {
+            throw new Error('更新対象の店舗が見つかりませんでした');
+          }
+
+          setShops(getShops(baseShops));
+          return {
+            shop: updatedLocalShop,
+            savedTo: 'localStorage',
+            message: 'Supabaseが未設定のため、ブラウザに更新内容を保存しました。',
+          };
         }
 
-        setShops(getShops(baseShops));
-        return updatedShop;
+        try {
+          const updatedShop = await updateSupabaseShop(id, input);
+          setBaseShops((prev) => {
+            const nextBaseShops = prev.map((shop) => (shop.id === id ? updatedShop : shop));
+            setShops(getShops(nextBaseShops));
+            return nextBaseShops;
+          });
+
+          updateShopInStorage(id, updatedShop, baseShops);
+
+          return {
+            shop: updatedShop,
+            savedTo: 'supabase',
+            message: 'Supabaseに更新内容を保存しました。',
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Supabase への更新に失敗しました';
+          console.error('[ShopsProvider] Failed to update shop in Supabase:', message);
+
+          const fallbackUpdatedShop = updateShopInStorage(id, input, baseShops);
+          if (!fallbackUpdatedShop) {
+            throw new Error(`${message}。さらにブラウザへの保存にも失敗しました。`);
+          }
+
+          setShops(getShops(baseShops));
+          return {
+            shop: fallbackUpdatedShop,
+            savedTo: 'localStorage',
+            message: `${message}。ブラウザに更新内容を保存しました。`,
+          };
+        }
       },
       deleteShop: (id: string) => {
         const deleted = deleteShopFromStorage(id, baseShops);

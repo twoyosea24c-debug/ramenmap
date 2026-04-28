@@ -35,6 +35,7 @@ export function EditShopPage() {
 
   const [values, setValues] = useState<ShopFormValues>(initialValues);
   const [errors, setErrors] = useState<ShopFormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const onChange = (field: keyof ShopFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -67,7 +68,7 @@ export function EditShopPage() {
     return nextErrors;
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!shop) {
@@ -81,18 +82,23 @@ export function EditShopPage() {
       return;
     }
 
-    const updated = updateShop(shop.id, {
-      name: values.name.trim(),
-      region: values.region.trim(),
-      address: values.address.trim(),
-      ramenType: values.ramenType.trim(),
-      rating: values.rating.trim() ? Number(values.rating) : 3,
-      businessHours: values.businessHours.trim(),
-      recommendation: values.recommendation.trim(),
-    });
+    setSubmitError(null);
 
-    if (updated) {
-      navigate(`/shops/${updated.id}`);
+    try {
+      const result = await updateShop(shop.id, {
+        name: values.name.trim(),
+        region: values.region.trim(),
+        address: values.address.trim(),
+        ramenType: values.ramenType.trim(),
+        rating: values.rating.trim() ? Number(values.rating) : 3,
+        businessHours: values.businessHours.trim(),
+        recommendation: values.recommendation.trim(),
+      });
+
+      sessionStorage.setItem('ramenmap:update-shop-flash', result.message);
+      navigate(`/shops/${result.shop.id}`);
+    } catch {
+      setSubmitError('更新に失敗しました。入力内容を確認して再度お試しください。');
     }
   };
 
@@ -177,6 +183,7 @@ export function EditShopPage() {
         {Object.keys(errors).length > 0 ? (
           <p className="form-error form-error-summary">入力内容を確認してください。</p>
         ) : null}
+        {submitError ? <p className="form-error form-error-summary">{submitError}</p> : null}
 
         <div className="shop-form-actions">
           <button type="submit" className="button-primary">

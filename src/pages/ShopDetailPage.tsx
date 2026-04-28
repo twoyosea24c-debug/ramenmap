@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
@@ -8,6 +9,17 @@ export function ShopDetailPage() {
   const { shops, deleteShop } = useShops();
   const shop = shops.find((item) => item.id === id);
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const message = sessionStorage.getItem('ramenmap:update-shop-flash');
+    if (!message) {
+      return;
+    }
+
+    setFlashMessage(message);
+    sessionStorage.removeItem('ramenmap:update-shop-flash');
+  }, []);
 
   if (!shop) {
     return (
@@ -42,6 +54,8 @@ export function ShopDetailPage() {
       <h1>{shop.name}</h1>
 
       <article className="card detail-card">
+        {flashMessage ? <p className="status-ok">{flashMessage}</p> : null}
+
         <dl className="detail-list">
           <div>
             <dt>店舗名</dt>
