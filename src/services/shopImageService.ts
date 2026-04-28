@@ -2,6 +2,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const SHOP_IMAGE_BUCKET = 'shop-images';
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 function getFileExtension(file: File): string {
@@ -24,7 +25,11 @@ function getFileExtension(file: File): string {
 }
 
 export function validateShopImageFile(file: File): string | null {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+  const extension = getFileExtension(file);
+  const hasAllowedType = ALLOWED_IMAGE_TYPES.includes(file.type);
+  const hasAllowedExtension = ALLOWED_IMAGE_EXTENSIONS.includes(extension);
+
+  if (!hasAllowedType && !hasAllowedExtension) {
     return '画像は jpg / jpeg / png / webp 形式のみアップロードできます。';
   }
 
