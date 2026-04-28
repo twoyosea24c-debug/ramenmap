@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { ramenShops } from '../data/shops';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -32,6 +32,7 @@ type ShopsContextValue = {
   shops: RamenShop[];
   isLoading: boolean;
   loadError: string | null;
+  reloadShops: () => Promise<void>;
   addShop: (input: ShopInput) => Promise<AddShopResult>;
   updateShop: (id: string, input: ShopInput) => Promise<UpdateShopResult>;
   deleteShop: (id: string) => Promise<DeleteShopResult>;
@@ -58,6 +59,31 @@ export function ShopsProvider({ children }: PropsWithChildren) {
     setShops(getShops(supabaseShops));
   };
 
+  const reloadShops = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setBaseShops(ramenShops);
+      setShops(getShops(ramenShops));
+      setLoadError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      const supabaseShops = await fetchSupabaseShops();
+      applySupabaseShops(supabaseShops);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Supabase からの読み込みに失敗しました';
+      console.error('[ShopsProvider] Failed to load shops from Supabase:', message);
+      setLoadError(`${message}。ローカルデータを表示しています。`);
+      setBaseShops(ramenShops);
+      setShops(getShops(ramenShops));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -70,7 +96,6 @@ export function ShopsProvider({ children }: PropsWithChildren) {
       }
 
       setIsLoading(true);
-      setLoadError(null);
 
       try {
         const supabaseShops = await fetchSupabaseShops();
@@ -110,6 +135,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
       shops,
       isLoading,
       loadError,
+      reloadShops,
       addShop: async (input: ShopInput) => {
         if (!isSupabaseConfigured) {
           const newShop = addShopToStorage(input);
@@ -123,8 +149,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
 
         try {
           const newShop = await insertSupabaseShop(input);
-          const refreshedSupabaseShops = await fetchSupabaseShops();
-          applySupabaseShops(refreshedSupabaseShops);
+          await reloadShops();
           return {
             shop: newShop,
             savedTo: 'supabase',
@@ -220,7 +245,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
         }
       },
     }),
-    [baseShops, isLoading, loadError, shops],
+    [baseShops, isLoading, loadError, reloadShops, shops],
   );
 
   return <ShopsContext.Provider value={value}>{children}</ShopsContext.Provider>;

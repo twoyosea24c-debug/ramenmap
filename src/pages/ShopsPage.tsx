@@ -9,7 +9,7 @@ export function ShopsPage() {
   const [region, setRegion] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
-  const { shops, deleteShop, isLoading, loadError } = useShops();
+  const { shops, deleteShop, isLoading, loadError, reloadShops } = useShops();
   const { isAdmin } = useAuth();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
 
@@ -21,7 +21,11 @@ export function ShopsPage() {
 
     setFlashMessage(message);
     sessionStorage.removeItem('ramenmap:save-shop-flash');
-  }, []);
+
+    if (message === 'Supabaseに店舗を保存しました。') {
+      void reloadShops();
+    }
+  }, [reloadShops]);
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
