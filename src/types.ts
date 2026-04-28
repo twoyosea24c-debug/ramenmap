@@ -8,6 +8,8 @@ export type RamenShop = {
   address: string;
   recommendation: string;
   imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type ShopInput = Omit<RamenShop, 'id'>;
@@ -22,6 +24,8 @@ export type SupabaseShopRow = {
   business_hours: string | null;
   recommendation: string | null;
   image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type SupabaseShopInsertRow = {
@@ -34,6 +38,8 @@ export type SupabaseShopInsertRow = {
   business_hours: string;
   recommendation: string;
   image_url?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type SupabaseShopUpdateRow = {
@@ -45,6 +51,8 @@ export type SupabaseShopUpdateRow = {
   business_hours: string;
   recommendation: string;
   image_url?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   updated_at: string;
 };
 

@@ -17,6 +17,8 @@ const columns = [
   'business_hours',
   'recommendation',
   'image_url',
+  'latitude',
+  'longitude',
 ] as const;
 
 function mapSupabaseRowToShop(row: SupabaseShopRow): RamenShop {
@@ -30,6 +32,8 @@ function mapSupabaseRowToShop(row: SupabaseShopRow): RamenShop {
     businessHours: row.business_hours ?? '未設定',
     recommendation: row.recommendation ?? '未設定',
     imageUrl: row.image_url ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
   };
 }
 
@@ -62,6 +66,8 @@ function mapInputToSupabaseRow(input: ShopInput): SupabaseShopInsertRow {
     business_hours: input.businessHours,
     recommendation: input.recommendation,
     image_url: input.imageUrl,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
   };
 }
 
@@ -75,6 +81,8 @@ function mapInputToSupabaseUpdateRow(input: ShopInput): SupabaseShopUpdateRow {
     business_hours: input.businessHours,
     recommendation: input.recommendation,
     image_url: input.imageUrl,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
     updated_at: new Date().toISOString(),
   };
 }

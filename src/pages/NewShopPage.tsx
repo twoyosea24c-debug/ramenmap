@@ -12,6 +12,8 @@ type ShopFormValues = {
   rating: string;
   businessHours: string;
   recommendation: string;
+  latitude: string;
+  longitude: string;
 };
 
 type ShopFormErrors = Partial<Record<keyof ShopFormValues, string>>;
@@ -24,6 +26,8 @@ const initialValues: ShopFormValues = {
   rating: '',
   businessHours: '',
   recommendation: '',
+  latitude: '',
+  longitude: '',
 };
 
 export function NewShopPage() {
@@ -61,6 +65,20 @@ export function NewShopPage() {
       const isInteger = Number.isInteger(parsedRating);
       if (!Number.isFinite(parsedRating) || !isInteger || parsedRating < 1 || parsedRating > 5) {
         nextErrors.rating = '評価は1〜5の整数で入力してください。';
+      }
+    }
+
+    if (values.latitude.trim()) {
+      const parsedLatitude = Number(values.latitude);
+      if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
+        nextErrors.latitude = '緯度は -90〜90 の範囲で入力してください。';
+      }
+    }
+
+    if (values.longitude.trim()) {
+      const parsedLongitude = Number(values.longitude);
+      if (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+        nextErrors.longitude = '経度は -180〜180 の範囲で入力してください。';
       }
     }
 
@@ -106,6 +124,8 @@ export function NewShopPage() {
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
         recommendation: values.recommendation.trim(),
+        latitude: values.latitude.trim() ? Number(values.latitude) : undefined,
+        longitude: values.longitude.trim() ? Number(values.longitude) : undefined,
         imageUrl,
       });
 
@@ -172,6 +192,34 @@ export function NewShopPage() {
             value={values.businessHours}
             onChange={(e) => onChange('businessHours', e.target.value)}
           />
+        </div>
+
+        <div>
+          <label htmlFor="latitude">緯度</label>
+          <input
+            id="latitude"
+            type="number"
+            min={-90}
+            max={90}
+            step="any"
+            value={values.latitude}
+            onChange={(e) => onChange('latitude', e.target.value)}
+          />
+          {errors.latitude ? <p className="form-error">{errors.latitude}</p> : null}
+        </div>
+
+        <div>
+          <label htmlFor="longitude">経度</label>
+          <input
+            id="longitude"
+            type="number"
+            min={-180}
+            max={180}
+            step="any"
+            value={values.longitude}
+            onChange={(e) => onChange('longitude', e.target.value)}
+          />
+          {errors.longitude ? <p className="form-error">{errors.longitude}</p> : null}
         </div>
 
         <div>
