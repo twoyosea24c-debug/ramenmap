@@ -89,7 +89,7 @@ export function SupabaseShopsPage() {
           throw new Error(error.message);
         }
 
-        const fetchedShops = (data ?? []) as SupabaseShop[];
+        const fetchedShops = (data ?? []) as unknown as SupabaseShop[];
         if (fetchedShops.length === 0) {
           setShops([]);
           setErrorMessage('shops テーブルにデータがありません');

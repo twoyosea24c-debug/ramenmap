@@ -1,7 +1,22 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import type { RamenShop, ShopInput, SupabaseShopInsertRow, SupabaseShopRow, SupabaseShopUpdateRow } from '../types';
+import type {
+  RamenShop,
+  ShopInput,
+  SupabaseShopInsertRow,
+  SupabaseShopRow,
+  SupabaseShopUpdateRow,
+} from '../types';
 
-const columns = ['id', 'name', 'area', 'address', 'ramen_type', 'rating', 'business_hours', 'recommendation'] as const;
+const columns = [
+  'id',
+  'name',
+  'area',
+  'address',
+  'ramen_type',
+  'rating',
+  'business_hours',
+  'recommendation',
+] as const;
 
 function mapSupabaseRowToShop(row: SupabaseShopRow): RamenShop {
   return {
@@ -60,139 +75,85 @@ function mapInputToSupabaseUpdateRow(input: ShopInput): SupabaseShopUpdateRow {
   };
 }
 
+function normalizeSupabaseError(action: string, message: string): Error {
+  const normalized = message.toLowerCase();
+  const isRlsError =
+    normalized.includes('row-level security') ||
+    normalized.includes('rls') ||
+    normalized.includes('permission denied') ||
+    normalized.includes('not allowed');
+
+  if (isRlsError) {
+    return new Error(
+      `権限不足のため${action}できません。管理者アカウントでログインしてから再試行してください。`,
+    );
+  }
+
+  return new Error(`Supabase ${action}に失敗しました: ${message}`);
+}
+
 export async function fetchSupabaseShops(): Promise<RamenShop[]> {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
   }
 
   const { data, error } = await supabase
-    .from<SupabaseShopRow>('shops')
+    .from('shops')
     .select(columns.join(','))
     .order('created_at', { ascending: true });
 
   if (error) {
-    throw new Error(`Supabase から店舗一覧を取得できませんでした: ${error.message}`);
+    throw normalizeSupabaseError('から店舗一覧を取得', error.message);
   }
 
-  return (data ?? []).map(mapSupabaseRowToShop);
+  return ((data ?? []) as unknown as SupabaseShopRow[]).map(mapSupabaseRowToShop);
 }
 
 export async function insertSupabaseShop(input: ShopInput): Promise<RamenShop> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!isSupabaseConfigured || !supabase || !supabaseUrl || !supabaseAnonKey) {
+  if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
   }
 
-  const row = mapInputToSupabaseRow(input);
-  const response = await fetch(`${supabaseUrl}/rest/v1/shops`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(row),
-  });
+  const { data, error } = await supabase
+    .from('shops')
+    .insert(mapInputToSupabaseRow(input))
+    .select(columns.join(','))
+    .single<SupabaseShopRow>();
 
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    try {
-      const body: unknown = await response.json();
-      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
-        detail = body.message;
-      }
-    } catch {
-      // ignore and fallback to status text
-    }
-
-    throw new Error(`Supabase への保存に失敗しました: ${detail}`);
+  if (error) {
+    throw normalizeSupabaseError('への保存', error.message);
   }
 
-  const inserted = (await response.json()) as SupabaseShopRow[];
-  const firstRow = inserted[0];
-
-  if (!firstRow) {
-    throw new Error('Supabase への保存結果が取得できませんでした');
-  }
-
-  return mapSupabaseRowToShop(firstRow);
+  return mapSupabaseRowToShop(data);
 }
 
 export async function updateSupabaseShop(id: string, input: ShopInput): Promise<RamenShop> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!isSupabaseConfigured || !supabase || !supabaseUrl || !supabaseAnonKey) {
+  if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
   }
 
-  const row = mapInputToSupabaseUpdateRow(input);
-  const response = await fetch(`${supabaseUrl}/rest/v1/shops?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(row),
-  });
+  const { data, error } = await supabase
+    .from('shops')
+    .update(mapInputToSupabaseUpdateRow(input))
+    .eq('id', id)
+    .select(columns.join(','))
+    .single<SupabaseShopRow>();
 
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    try {
-      const body: unknown = await response.json();
-      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
-        detail = body.message;
-      }
-    } catch {
-      // ignore and fallback to status text
-    }
-
-    throw new Error(`Supabase への更新に失敗しました: ${detail}`);
+  if (error) {
+    throw normalizeSupabaseError('への更新', error.message);
   }
 
-  const updatedRows = (await response.json()) as SupabaseShopRow[];
-  const firstRow = updatedRows[0];
-
-  if (!firstRow) {
-    throw new Error('Supabase の更新結果が取得できませんでした');
-  }
-
-  return mapSupabaseRowToShop(firstRow);
+  return mapSupabaseRowToShop(data);
 }
 
 export async function deleteSupabaseShop(id: string): Promise<void> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!isSupabaseConfigured || !supabase || !supabaseUrl || !supabaseAnonKey) {
+  if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
   }
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/shops?id=eq.${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
-      Prefer: 'return=minimal',
-    },
-  });
+  const { error } = await supabase.from('shops').delete().eq('id', id);
 
-  if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    try {
-      const body: unknown = await response.json();
-      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
-        detail = body.message;
-      }
-    } catch {
-      // ignore and fallback to status text
-    }
-
-    throw new Error(`Supabase からの削除に失敗しました: ${detail}`);
+  if (error) {
+    throw normalizeSupabaseError('からの削除', error.message);
   }
 }

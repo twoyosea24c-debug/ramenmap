@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useShops } from '../context/ShopsContext';
+import { useAuth } from '../context/AuthContext';
 
 type ShopFormValues = {
   name: string;
@@ -27,6 +28,7 @@ const initialValues: ShopFormValues = {
 export function NewShopPage() {
   const navigate = useNavigate();
   const { addShop } = useShops();
+  const { isAdmin } = useAuth();
   const [values, setValues] = useState<ShopFormValues>(initialValues);
   const [errors, setErrors] = useState<ShopFormErrors>({});
 
@@ -73,6 +75,11 @@ export function NewShopPage() {
       return;
     }
 
+    if (!isAdmin) {
+      setSubmitError('管理者のみ操作できます。');
+      return;
+    }
+
     setSubmitError(null);
 
     try {
@@ -88,8 +95,9 @@ export function NewShopPage() {
 
       sessionStorage.setItem('ramenmap:save-shop-flash', result.message);
       navigate('/shops');
-    } catch {
-      setSubmitError('保存に失敗しました。入力内容を確認して再度お試しください。');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '保存に失敗しました。';
+      setSubmitError(message);
     }
   };
 

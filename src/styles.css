@@ -503,3 +503,19 @@ body {
 .supabase-shop-item h2 {
   margin-top: 0;
 }
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.auth-wrapper {
+  max-width: 560px;
+}
