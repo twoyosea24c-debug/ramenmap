@@ -4,6 +4,8 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
 export function ShopDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,6 +37,10 @@ export function ShopDetailPage() {
   }
 
   const favorite = isFavorite(shop.id);
+  const hasCoordinates = shop.latitude !== undefined && shop.longitude !== undefined;
+  const mapSrc = hasCoordinates
+    ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(googleMapsApiKey ?? '')}&q=${encodeURIComponent(`${shop.latitude},${shop.longitude}`)}`
+    : '';
 
   const handleDelete = async () => {
     if (!isAdmin) {
@@ -101,6 +107,24 @@ export function ShopDetailPage() {
             <dd>{shop.recommendation}</dd>
           </div>
         </dl>
+
+        <section className="shop-map-section" aria-label="店舗位置">
+          <h2>地図</h2>
+          {!hasCoordinates ? (
+            <p className="shop-map-message">位置情報が未設定です</p>
+          ) : !googleMapsApiKey ? (
+            <p className="shop-map-message">Google Maps APIキーが未設定です</p>
+          ) : (
+            <iframe
+              title={`${shop.name} の地図`}
+              src={mapSrc}
+              className="shop-map-iframe"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          )}
+        </section>
       </article>
 
       <div className="detail-actions">
