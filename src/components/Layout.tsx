@@ -10,6 +10,7 @@ const navItems = [
 ];
 
 const adminNavItems = [
+  { to: '/admin', label: '管理画面' },
   { to: '/settings/supabase', label: 'Supabase設定' },
   { to: '/settings/supabase-shops', label: 'Supabase店舗確認' },
 ];
