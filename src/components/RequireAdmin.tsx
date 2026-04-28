@@ -2,7 +2,12 @@ import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export function RequireAdmin({ children }: { children: ReactElement }) {
+type RequireAdminProps = {
+  children: ReactElement;
+  redirectOnDeniedTo?: string;
+};
+
+export function RequireAdmin({ children, redirectOnDeniedTo }: RequireAdminProps) {
   const location = useLocation();
   const { isLoading, isLoggedIn, isAdmin } = useAuth();
 
@@ -15,6 +20,10 @@ export function RequireAdmin({ children }: { children: ReactElement }) {
   }
 
   if (!isAdmin) {
+    if (redirectOnDeniedTo) {
+      return <Navigate to={redirectOnDeniedTo} replace />;
+    }
+
     return (
       <section className="card detail-wrapper">
         <h1>権限がありません</h1>
