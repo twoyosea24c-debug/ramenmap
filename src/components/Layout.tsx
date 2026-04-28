@@ -7,6 +7,9 @@ const navItems = [
   { to: '/shops', label: '店舗一覧' },
   { to: '/regions', label: '地域別' },
   { to: '/favorites', label: 'お気に入り' },
+];
+
+const adminNavItems = [
   { to: '/settings/supabase', label: 'Supabase設定' },
   { to: '/settings/supabase-shops', label: 'Supabase店舗確認' },
 ];
@@ -52,6 +55,20 @@ export function Layout() {
                   </NavLink>
                 </li>
               ))}
+              {isAdmin
+                ? adminNavItems.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) =>
+                          isActive ? 'nav-link nav-link-active' : 'nav-link'
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))
+                : null}
               <li>
                 {isLoggedIn ? (
                   <button

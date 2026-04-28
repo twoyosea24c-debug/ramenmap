@@ -18,7 +18,7 @@ export function RequireAdmin({ children }: { children: ReactElement }) {
     return (
       <section className="card detail-wrapper">
         <h1>権限がありません</h1>
-        <p className="status-error">この操作は管理者のみ利用できます。</p>
+        <p className="status-error">管理者のみアクセスできます。</p>
       </section>
     );
   }
