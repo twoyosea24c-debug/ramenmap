@@ -22,6 +22,17 @@ export type SupabaseShopRow = {
   recommendation: string | null;
 };
 
+export type SupabaseShopInsertRow = {
+  id: string;
+  name: string;
+  area: string;
+  address: string;
+  ramen_type: string;
+  rating: number;
+  business_hours: string;
+  recommendation: string;
+};
+
 export type SupabaseFavoriteRow = {
   id: string;
   shopId: RamenShop['id'];

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
@@ -9,6 +9,17 @@ export function ShopsPage() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
   const { shops, deleteShop, isLoading, loadError } = useShops();
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const message = sessionStorage.getItem('ramenmap:save-shop-flash');
+    if (!message) {
+      return;
+    }
+
+    setFlashMessage(message);
+    sessionStorage.removeItem('ramenmap:save-shop-flash');
+  }, []);
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
@@ -90,6 +101,7 @@ export function ShopsPage() {
       </form>
 
       <p className="result-count">{filteredShops.length} 件の店舗が見つかりました。</p>
+      {flashMessage ? <p className="status-ok">{flashMessage}</p> : null}
       {isLoading ? <p>店舗データを読み込み中です...</p> : null}
       {loadError ? <p className="status-error">{loadError}</p> : null}
 
