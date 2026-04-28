@@ -16,6 +16,7 @@ const columns = [
   'rating',
   'business_hours',
   'recommendation',
+  'image_url',
 ] as const;
 
 function mapSupabaseRowToShop(row: SupabaseShopRow): RamenShop {
@@ -28,6 +29,7 @@ function mapSupabaseRowToShop(row: SupabaseShopRow): RamenShop {
     rating: row.rating ?? 0,
     businessHours: row.business_hours ?? '未設定',
     recommendation: row.recommendation ?? '未設定',
+    imageUrl: row.image_url ?? undefined,
   };
 }
 
@@ -59,6 +61,7 @@ function mapInputToSupabaseRow(input: ShopInput): SupabaseShopInsertRow {
     rating: clampRating(input.rating),
     business_hours: input.businessHours,
     recommendation: input.recommendation,
+    image_url: input.imageUrl,
   };
 }
 
@@ -71,6 +74,7 @@ function mapInputToSupabaseUpdateRow(input: ShopInput): SupabaseShopUpdateRow {
     rating: clampRating(input.rating),
     business_hours: input.businessHours,
     recommendation: input.recommendation,
+    image_url: input.imageUrl,
     updated_at: new Date().toISOString(),
   };
 }

@@ -126,6 +126,13 @@ export function ShopsPage() {
 
           return (
             <article className="card shop-card" key={shop.id}>
+              {shop.imageUrl ? (
+                <img src={shop.imageUrl} alt={`${shop.name} の店舗画像`} className="shop-card-image" loading="lazy" />
+              ) : (
+                <div className="shop-card-image-placeholder" aria-label="画像なし">
+                  画像なし
+                </div>
+              )}
               <div className="shop-card-header">
                 <h2>{shop.name}</h2>
                 <span className="rating-badge">⭐ {shop.rating.toFixed(1)}</span>
