@@ -7,7 +7,7 @@ import {
   getShops,
   updateShop as updateShopInStorage,
 } from '../services/shopStorageService';
-import { fetchSupabaseShops, insertSupabaseShop, updateSupabaseShop } from '../services/supabaseShopService';
+import { deleteSupabaseShop, fetchSupabaseShops, insertSupabaseShop, updateSupabaseShop } from '../services/supabaseShopService';
 import type { RamenShop, ShopInput } from '../types';
 
 type AddShopResult = {
@@ -22,13 +22,19 @@ type UpdateShopResult = {
   message: string;
 };
 
+type DeleteShopResult = {
+  deleted: boolean;
+  savedTo: 'supabase' | 'localStorage';
+  message: string;
+};
+
 type ShopsContextValue = {
   shops: RamenShop[];
   isLoading: boolean;
   loadError: string | null;
   addShop: (input: ShopInput) => Promise<AddShopResult>;
   updateShop: (id: string, input: ShopInput) => Promise<UpdateShopResult>;
-  deleteShop: (id: string) => boolean;
+  deleteShop: (id: string) => Promise<DeleteShopResult>;
 };
 
 const ShopsContext = createContext<ShopsContextValue | undefined>(undefined);
@@ -182,14 +188,63 @@ export function ShopsProvider({ children }: PropsWithChildren) {
           };
         }
       },
-      deleteShop: (id: string) => {
-        const deleted = deleteShopFromStorage(id, baseShops);
-        if (!deleted) {
-          return false;
+      deleteShop: async (id: string) => {
+        const existsInBase = baseShops.some((shop) => shop.id === id);
+
+        if (!isSupabaseConfigured || !existsInBase) {
+          const deletedLocalShop = deleteShopFromStorage(id, baseShops);
+          if (!deletedLocalShop) {
+            return {
+              deleted: false,
+              savedTo: 'localStorage',
+              message: '削除対象の店舗が見つかりませんでした。',
+            };
+          }
+
+          setShops(getShops(baseShops));
+          return {
+            deleted: true,
+            savedTo: 'localStorage',
+            message: 'Supabaseが未設定のため、ブラウザから削除しました。',
+          };
         }
 
-        setShops(getShops(baseShops));
-        return true;
+        try {
+          await deleteSupabaseShop(id);
+
+          setBaseShops((prev) => {
+            const nextBaseShops = prev.filter((shop) => shop.id !== id);
+            setShops(getShops(nextBaseShops));
+            return nextBaseShops;
+          });
+
+          deleteShopFromStorage(id, baseShops);
+
+          return {
+            deleted: true,
+            savedTo: 'supabase',
+            message: 'Supabaseから店舗を削除しました。',
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Supabase からの削除に失敗しました';
+          console.error('[ShopsProvider] Failed to delete shop in Supabase:', message);
+
+          const fallbackDeletedShop = deleteShopFromStorage(id, baseShops);
+          if (!fallbackDeletedShop) {
+            return {
+              deleted: false,
+              savedTo: 'localStorage',
+              message: `${message}。さらにブラウザからの削除にも失敗しました。`,
+            };
+          }
+
+          setShops(getShops(baseShops));
+          return {
+            deleted: true,
+            savedTo: 'localStorage',
+            message: `${message}。ブラウザから削除しました。`,
+          };
+        }
       },
     }),
     [baseShops, isLoading, loadError, shops],
