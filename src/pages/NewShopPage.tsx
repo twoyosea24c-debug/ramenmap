@@ -79,6 +79,11 @@ export function NewShopPage() {
       return;
     }
 
+    if (imageError) {
+      setSubmitError(imageError);
+      return;
+    }
+
     if (!isAdmin) {
       setSubmitError('管理者のみ操作できます。');
       return;
@@ -206,6 +211,7 @@ export function NewShopPage() {
               }}
             />
             <p className="form-hint">対応形式: jpg / jpeg / png / webp（最大5MB）</p>
+            {imageFile ? <p className="form-hint">選択中: {imageFile.name}</p> : null}
             {imageError ? <p className="form-error">{imageError}</p> : null}
           </div>
         ) : null}
