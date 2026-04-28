@@ -61,7 +61,9 @@ export function NewShopPage() {
     return nextErrors;
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors = validate();
@@ -71,17 +73,24 @@ export function NewShopPage() {
       return;
     }
 
-    addShop({
-      name: values.name.trim(),
-      region: values.region.trim(),
-      address: values.address.trim(),
-      ramenType: values.ramenType.trim(),
-      rating: values.rating.trim() ? Number(values.rating) : 3,
-      businessHours: values.businessHours.trim(),
-      recommendation: values.recommendation.trim(),
-    });
+    setSubmitError(null);
 
-    navigate('/shops');
+    try {
+      const result = await addShop({
+        name: values.name.trim(),
+        region: values.region.trim(),
+        address: values.address.trim(),
+        ramenType: values.ramenType.trim(),
+        rating: values.rating.trim() ? Number(values.rating) : 3,
+        businessHours: values.businessHours.trim(),
+        recommendation: values.recommendation.trim(),
+      });
+
+      sessionStorage.setItem('ramenmap:save-shop-flash', result.message);
+      navigate('/shops');
+    } catch {
+      setSubmitError('保存に失敗しました。入力内容を確認して再度お試しください。');
+    }
   };
 
   return (
@@ -152,6 +161,7 @@ export function NewShopPage() {
         {Object.keys(errors).length > 0 ? (
           <p className="form-error form-error-summary">入力内容を確認してください。</p>
         ) : null}
+        {submitError ? <p className="form-error form-error-summary">{submitError}</p> : null}
 
         <div className="shop-form-actions">
           <button type="submit" className="button-primary">

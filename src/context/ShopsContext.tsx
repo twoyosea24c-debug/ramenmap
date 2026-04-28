@@ -7,14 +7,20 @@ import {
   getShops,
   updateShop as updateShopInStorage,
 } from '../services/shopStorageService';
-import { fetchSupabaseShops } from '../services/supabaseShopService';
+import { fetchSupabaseShops, insertSupabaseShop } from '../services/supabaseShopService';
 import type { RamenShop, ShopInput } from '../types';
+
+type AddShopResult = {
+  shop: RamenShop;
+  savedTo: 'supabase' | 'localStorage';
+  message: string;
+};
 
 type ShopsContextValue = {
   shops: RamenShop[];
   isLoading: boolean;
   loadError: string | null;
-  addShop: (input: ShopInput) => RamenShop;
+  addShop: (input: ShopInput) => Promise<AddShopResult>;
   updateShop: (id: string, input: ShopInput) => RamenShop | null;
   deleteShop: (id: string) => boolean;
 };
@@ -87,10 +93,38 @@ export function ShopsProvider({ children }: PropsWithChildren) {
       shops,
       isLoading,
       loadError,
-      addShop: (input: ShopInput) => {
-        const newShop = addShopToStorage(input);
-        setShops(getShops(baseShops));
-        return newShop;
+      addShop: async (input: ShopInput) => {
+        if (!isSupabaseConfigured) {
+          const newShop = addShopToStorage(input);
+          setShops(getShops(baseShops));
+          return {
+            shop: newShop,
+            savedTo: 'localStorage',
+            message: 'Supabaseが未設定のため、ブラウザに保存しました。',
+          };
+        }
+
+        try {
+          const newShop = await insertSupabaseShop(input);
+          setBaseShops((prev) => [...prev, newShop]);
+          setShops((prev) => [...prev, newShop]);
+          return {
+            shop: newShop,
+            savedTo: 'supabase',
+            message: 'Supabaseに店舗を保存しました。',
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Supabase への保存に失敗しました';
+          console.error('[ShopsProvider] Failed to save shop to Supabase:', message);
+
+          const fallbackShop = addShopToStorage(input);
+          setShops(getShops(baseShops));
+          return {
+            shop: fallbackShop,
+            savedTo: 'localStorage',
+            message: `${message}。ブラウザに保存しました。`,
+          };
+        }
       },
       updateShop: (id: string, input: ShopInput) => {
         const updatedShop = updateShopInStorage(id, input, baseShops);
