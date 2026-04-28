@@ -63,6 +63,13 @@ export function ShopDetailPage() {
 
       <article className="card detail-card">
         {flashMessage ? <p className="status-ok">{flashMessage}</p> : null}
+        {shop.imageUrl ? (
+          <img src={shop.imageUrl} alt={`${shop.name} の店舗画像`} className="shop-detail-image" />
+        ) : (
+          <div className="shop-detail-image-placeholder" aria-label="画像なし">
+            画像が登録されていません
+          </div>
+        )}
 
         <dl className="detail-list">
           <div>

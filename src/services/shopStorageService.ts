@@ -24,7 +24,8 @@ function isRamenShop(value: unknown): value is RamenShop {
     typeof candidate.ramenType === 'string' &&
     typeof candidate.rating === 'number' &&
     typeof candidate.businessHours === 'string' &&
-    typeof candidate.recommendation === 'string'
+    typeof candidate.recommendation === 'string' &&
+    (typeof candidate.imageUrl === 'string' || typeof candidate.imageUrl === 'undefined')
   );
 }
 

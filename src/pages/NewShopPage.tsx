@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
+import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 
 type ShopFormValues = {
   name: string;
@@ -31,6 +32,9 @@ export function NewShopPage() {
   const { isAdmin } = useAuth();
   const [values, setValues] = useState<ShopFormValues>(initialValues);
   const [errors, setErrors] = useState<ShopFormErrors>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const onChange = (field: keyof ShopFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -83,6 +87,12 @@ export function NewShopPage() {
     setSubmitError(null);
 
     try {
+      let imageUrl: string | undefined;
+      if (isAdmin && imageFile) {
+        setIsUploadingImage(true);
+        imageUrl = await uploadShopImage(imageFile);
+      }
+
       const result = await addShop({
         name: values.name.trim(),
         region: values.region.trim(),
@@ -91,6 +101,7 @@ export function NewShopPage() {
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
         recommendation: values.recommendation.trim(),
+        imageUrl,
       });
 
       sessionStorage.setItem('ramenmap:save-shop-flash', result.message);
@@ -98,6 +109,8 @@ export function NewShopPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存に失敗しました。';
       setSubmitError(message);
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -165,6 +178,37 @@ export function NewShopPage() {
             rows={4}
           />
         </div>
+        {isAdmin ? (
+          <div>
+            <label htmlFor="imageFile">店舗画像</label>
+            <input
+              id="imageFile"
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0] ?? null;
+                if (!file) {
+                  setImageFile(null);
+                  setImageError(null);
+                  return;
+                }
+
+                const validationMessage = validateShopImageFile(file);
+                if (validationMessage) {
+                  setImageFile(null);
+                  setImageError(validationMessage);
+                  event.currentTarget.value = '';
+                  return;
+                }
+
+                setImageFile(file);
+                setImageError(null);
+              }}
+            />
+            <p className="form-hint">対応形式: jpg / jpeg / png / webp（最大5MB）</p>
+            {imageError ? <p className="form-error">{imageError}</p> : null}
+          </div>
+        ) : null}
 
         {Object.keys(errors).length > 0 ? (
           <p className="form-error form-error-summary">入力内容を確認してください。</p>
@@ -172,8 +216,8 @@ export function NewShopPage() {
         {submitError ? <p className="form-error form-error-summary">{submitError}</p> : null}
 
         <div className="shop-form-actions">
-          <button type="submit" className="button-primary">
-            保存
+          <button type="submit" className="button-primary" disabled={isUploadingImage}>
+            {isUploadingImage ? '画像アップロード中...' : '保存'}
           </button>
           <Link to="/shops" className="button-secondary">
             キャンセル

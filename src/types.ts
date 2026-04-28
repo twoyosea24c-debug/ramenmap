@@ -7,6 +7,7 @@ export type RamenShop = {
   businessHours: string;
   address: string;
   recommendation: string;
+  imageUrl?: string;
 };
 
 export type ShopInput = Omit<RamenShop, 'id'>;
@@ -20,6 +21,7 @@ export type SupabaseShopRow = {
   rating: number | null;
   business_hours: string | null;
   recommendation: string | null;
+  image_url: string | null;
 };
 
 export type SupabaseShopInsertRow = {
@@ -31,6 +33,7 @@ export type SupabaseShopInsertRow = {
   rating: number;
   business_hours: string;
   recommendation: string;
+  image_url?: string;
 };
 
 export type SupabaseShopUpdateRow = {
@@ -41,6 +44,7 @@ export type SupabaseShopUpdateRow = {
   rating: number;
   business_hours: string;
   recommendation: string;
+  image_url?: string;
   updated_at: string;
 };
 
