@@ -8,7 +8,7 @@ export function ShopsPage() {
   const [region, setRegion] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
-  const { shops, deleteShop } = useShops();
+  const { shops, deleteShop, isLoading, loadError } = useShops();
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
@@ -90,6 +90,8 @@ export function ShopsPage() {
       </form>
 
       <p className="result-count">{filteredShops.length} 件の店舗が見つかりました。</p>
+      {isLoading ? <p>店舗データを読み込み中です...</p> : null}
+      {loadError ? <p className="status-error">{loadError}</p> : null}
 
       <div className="shop-list">
         {filteredShops.map((shop) => {

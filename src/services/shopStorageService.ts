@@ -94,12 +94,12 @@ export function getDeletedShopIds(): string[] {
   return readStringArray(STORAGE_KEYS.deletedShopIds);
 }
 
-export function getShops(): RamenShop[] {
+export function getShops(baseShops: RamenShop[] = ramenShops): RamenShop[] {
   const customShops = getCustomShops();
   const editedBaseShops = getEditedBaseShops();
   const deletedShopIds = getDeletedShopIds();
 
-  return [...ramenShops.map((baseShop) => editedBaseShops.find((edited) => edited.id === baseShop.id) ?? baseShop), ...customShops].filter(
+  return [...baseShops.map((baseShop) => editedBaseShops.find((edited) => edited.id === baseShop.id) ?? baseShop), ...customShops].filter(
     (shop) => !deletedShopIds.includes(shop.id),
   );
 }
@@ -116,9 +116,9 @@ export function addShop(input: ShopInput): RamenShop {
   return newShop;
 }
 
-export function updateShop(id: string, input: ShopInput): RamenShop | null {
+export function updateShop(id: string, input: ShopInput, baseShops: RamenShop[] = ramenShops): RamenShop | null {
   const updatedShop: RamenShop = { id, ...input };
-  const isBaseShop = ramenShops.some((shop) => shop.id === id);
+  const isBaseShop = baseShops.some((shop) => shop.id === id);
 
   if (isBaseShop) {
     const editedBaseShops = getEditedBaseShops();
@@ -141,13 +141,13 @@ export function updateShop(id: string, input: ShopInput): RamenShop | null {
   return updatedShop;
 }
 
-export function deleteShop(id: string): boolean {
+export function deleteShop(id: string, baseShops: RamenShop[] = ramenShops): boolean {
   const customShops = getCustomShops();
   const editedBaseShops = getEditedBaseShops();
   const deletedShopIds = getDeletedShopIds();
 
   const exists =
-    ramenShops.some((shop) => shop.id === id) ||
+    baseShops.some((shop) => shop.id === id) ||
     customShops.some((shop) => shop.id === id) ||
     editedBaseShops.some((shop) => shop.id === id);
 
