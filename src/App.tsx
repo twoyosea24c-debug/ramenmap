@@ -38,8 +38,22 @@ function App() {
         <Route path="regions" element={<RegionsPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="login" element={<LoginPage />} />
-        <Route path="settings/supabase" element={<SupabaseSettingsPage />} />
-        <Route path="settings/supabase-shops" element={<SupabaseShopsPage />} />
+        <Route
+          path="settings/supabase"
+          element={
+            <RequireAdmin>
+              <SupabaseSettingsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="settings/supabase-shops"
+          element={
+            <RequireAdmin>
+              <SupabaseShopsPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
