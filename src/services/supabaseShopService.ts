@@ -139,23 +139,19 @@ export async function insertSupabaseShop(input: ShopInput): Promise<RamenShop> {
   return mapSupabaseRowToShop(data);
 }
 
-export async function updateSupabaseShop(id: string, input: ShopInput): Promise<RamenShop> {
+export async function updateSupabaseShop(id: string, input: ShopInput): Promise<void> {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('shops')
     .update(mapInputToSupabaseUpdateRow(input))
-    .eq('id', id)
-    .select(columns.join(','))
-    .single<SupabaseShopRow>();
+    .eq('id', id);
 
   if (error) {
     throw normalizeSupabaseError('への更新', error.message);
   }
-
-  return mapSupabaseRowToShop(data);
 }
 
 export async function deleteSupabaseShop(id: string): Promise<void> {
