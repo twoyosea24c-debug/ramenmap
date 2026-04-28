@@ -45,6 +45,19 @@ export function ShopsProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const applySupabaseShops = (supabaseShops: RamenShop[]) => {
+    if (supabaseShops.length === 0) {
+      setLoadError('Supabaseの店舗データが空だったため、ローカルデータを表示しています。');
+      setBaseShops(ramenShops);
+      setShops(getShops(ramenShops));
+      return;
+    }
+
+    setLoadError(null);
+    setBaseShops(supabaseShops);
+    setShops(getShops(supabaseShops));
+  };
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -66,15 +79,7 @@ export function ShopsProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        if (supabaseShops.length === 0) {
-          setLoadError('Supabaseの店舗データが空だったため、ローカルデータを表示しています。');
-          setBaseShops(ramenShops);
-          setShops(getShops(ramenShops));
-          return;
-        }
-
-        setBaseShops(supabaseShops);
-        setShops(getShops(supabaseShops));
+        applySupabaseShops(supabaseShops);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Supabase からの読み込みに失敗しました';
         console.error('[ShopsProvider] Failed to load shops from Supabase:', message);
@@ -118,11 +123,8 @@ export function ShopsProvider({ children }: PropsWithChildren) {
 
         try {
           const newShop = await insertSupabaseShop(input);
-          setBaseShops((prev) => {
-            const nextBaseShops = [...prev, newShop];
-            setShops(getShops(nextBaseShops));
-            return nextBaseShops;
-          });
+          const refreshedSupabaseShops = await fetchSupabaseShops();
+          applySupabaseShops(refreshedSupabaseShops);
           return {
             shop: newShop,
             savedTo: 'supabase',
