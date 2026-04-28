@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,6 +13,22 @@ const navItems = [
 
 export function Layout() {
   const { isLoggedIn, isAdmin, logout } = useAuth();
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLogoutError(null);
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'ログアウトに失敗しました。';
+      setLogoutError(`ログアウトに失敗しました: ${message}`);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -37,8 +54,13 @@ export function Layout() {
               ))}
               <li>
                 {isLoggedIn ? (
-                  <button type="button" className="button-secondary" onClick={() => void logout()}>
-                    ログアウト
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => void handleLogout()}
+                    disabled={isLoggingOut}
+                  >
+                    {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
                   </button>
                 ) : (
                   <NavLink to="/login" className="nav-link">
@@ -51,6 +73,12 @@ export function Layout() {
           </nav>
         </div>
       </header>
+
+      {logoutError ? (
+        <p className="status-error container" role="alert">
+          {logoutError}
+        </p>
+      ) : null}
 
       <main className="container main-content">
         <Outlet />

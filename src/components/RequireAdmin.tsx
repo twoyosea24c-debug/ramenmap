@@ -1,7 +1,8 @@
+import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export function RequireAdmin({ children }: { children: JSX.Element }) {
+export function RequireAdmin({ children }: { children: ReactElement }) {
   const location = useLocation();
   const { isLoading, isLoggedIn, isAdmin } = useAuth();
 

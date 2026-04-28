@@ -44,6 +44,11 @@ export function ShopsPage() {
   }, [keyword, region, sortOrder, shops]);
 
   const handleDelete = async (shopId: string) => {
+    if (!isAdmin) {
+      setFlashMessage('管理者のみ削除できます。');
+      return;
+    }
+
     const shouldDelete = window.confirm('この店舗を削除しますか？');
     if (!shouldDelete) {
       return;
