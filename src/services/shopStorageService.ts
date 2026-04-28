@@ -156,6 +156,15 @@ export function deleteShop(id: string, baseShops: RamenShop[] = ramenShops): boo
   }
 
   writeStringArray(STORAGE_KEYS.deletedShopIds, [...deletedShopIds, id]);
+
+  const favoriteIds = getFavorites();
+  if (favoriteIds.includes(id)) {
+    writeStringArray(
+      STORAGE_KEYS.favorites,
+      favoriteIds.filter((favoriteId) => favoriteId !== id),
+    );
+  }
+
   return true;
 }
 

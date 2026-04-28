@@ -34,14 +34,15 @@ export function ShopDetailPage() {
 
   const favorite = isFavorite(shop.id);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const shouldDelete = window.confirm('この店舗を削除しますか？');
     if (!shouldDelete) {
       return;
     }
 
-    const deleted = deleteShop(shop.id);
-    if (!deleted) {
+    const result = await deleteShop(shop.id);
+    if (!result.deleted) {
+      setFlashMessage(result.message);
       return;
     }
 
@@ -100,7 +101,7 @@ export function ShopDetailPage() {
         <Link to={`/shops/${shop.id}/edit`} className="button-secondary back-button">
           編集
         </Link>
-        <button type="button" className="button-danger back-button" onClick={handleDelete}>
+        <button type="button" className="button-danger back-button" onClick={() => void handleDelete()}>
           削除
         </button>
         <Link to="/shops" className="button-secondary back-button">

@@ -164,3 +164,35 @@ export async function updateSupabaseShop(id: string, input: ShopInput): Promise<
 
   return mapSupabaseRowToShop(firstRow);
 }
+
+export async function deleteSupabaseShop(id: string): Promise<void> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!isSupabaseConfigured || !supabase || !supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase が未設定です');
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/shops?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      Prefer: 'return=minimal',
+    },
+  });
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const body: unknown = await response.json();
+      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
+        detail = body.message;
+      }
+    } catch {
+      // ignore and fallback to status text
+    }
+
+    throw new Error(`Supabase からの削除に失敗しました: ${detail}`);
+  }
+}

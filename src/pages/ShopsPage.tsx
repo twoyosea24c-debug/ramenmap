@@ -41,18 +41,20 @@ export function ShopsPage() {
       .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
   }, [keyword, region, sortOrder, shops]);
 
-  const handleDelete = (shopId: string) => {
+  const handleDelete = async (shopId: string) => {
     const shouldDelete = window.confirm('この店舗を削除しますか？');
     if (!shouldDelete) {
       return;
     }
 
-    const deleted = deleteShop(shopId);
-    if (!deleted) {
+    const result = await deleteShop(shopId);
+    if (!result.deleted) {
+      setFlashMessage(result.message);
       return;
     }
 
     removeFavorite(shopId);
+    setFlashMessage(result.message);
   };
 
   return (
@@ -150,7 +152,7 @@ export function ShopsPage() {
                 <Link to={`/shops/${shop.id}/edit`} className="button-secondary detail-button">
                   編集
                 </Link>
-                <button type="button" className="button-danger detail-button" onClick={() => handleDelete(shop.id)}>
+                <button type="button" className="button-danger detail-button" onClick={() => void handleDelete(shop.id)}>
                   削除
                 </button>
               </div>
