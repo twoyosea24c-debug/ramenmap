@@ -106,8 +106,11 @@ export function ShopsProvider({ children }: PropsWithChildren) {
 
         try {
           const newShop = await insertSupabaseShop(input);
-          setBaseShops((prev) => [...prev, newShop]);
-          setShops((prev) => [...prev, newShop]);
+          setBaseShops((prev) => {
+            const nextBaseShops = [...prev, newShop];
+            setShops(getShops(nextBaseShops));
+            return nextBaseShops;
+          });
           return {
             shop: newShop,
             savedTo: 'supabase',

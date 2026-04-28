@@ -85,7 +85,17 @@ export async function insertSupabaseShop(input: ShopInput): Promise<RamenShop> {
   });
 
   if (!response.ok) {
-    throw new Error(`Supabase への保存に失敗しました: HTTP ${response.status}`);
+    let detail = `HTTP ${response.status}`;
+    try {
+      const body: unknown = await response.json();
+      if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
+        detail = body.message;
+      }
+    } catch {
+      // ignore and fallback to status text
+    }
+
+    throw new Error(`Supabase への保存に失敗しました: ${detail}`);
   }
 
   const inserted = (await response.json()) as SupabaseShopRow[];
