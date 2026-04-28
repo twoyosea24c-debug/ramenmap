@@ -177,7 +177,8 @@ export function ShopsProvider({ children }: PropsWithChildren) {
         }
 
         try {
-          const updatedShop = await updateSupabaseShop(id, input);
+          await updateSupabaseShop(id, input);
+          const updatedShop: RamenShop = { id, ...input };
           setBaseShops((prev) => {
             const nextBaseShops = prev.map((shop) => (shop.id === id ? updatedShop : shop));
             setShops(getShops(nextBaseShops));
