@@ -4,7 +4,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 
-const googleMapsEmbedApiKey = import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY ?? import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+import { googleMapsEmbedApiKey } from '../services/geocodingService';
 
 export function ShopDetailPage() {
   const { id } = useParams();
