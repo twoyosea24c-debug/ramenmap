@@ -442,6 +442,14 @@ body {
   color: #4b5563;
 }
 
+.shops-map-canvas {
+  width: 100%;
+  min-height: 380px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
 .back-button {
   justify-self: start;
 }
