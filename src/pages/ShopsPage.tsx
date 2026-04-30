@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
+import { googleMapsEmbedApiKey } from '../services/geocodingService';
+
+const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
 
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
@@ -12,6 +15,8 @@ export function ShopsPage() {
   const { shops, deleteShop, isLoading, loadError, reloadShops } = useShops();
   const { isAdmin } = useAuth();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [mapsLoadError, setMapsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const message = sessionStorage.getItem('ramenmap:save-shop-flash');
@@ -46,6 +51,113 @@ export function ShopsPage() {
       })
       .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
   }, [keyword, region, sortOrder, shops]);
+
+
+  const mappableShops = useMemo(
+    () => filteredShops.filter((shop) => shop.latitude != null && shop.longitude != null),
+    [filteredShops],
+  );
+  useEffect(() => {
+    const apiKey = googleMapsEmbedApiKey;
+    const mapElement = mapContainerRef.current;
+
+    if (!mapElement || !apiKey) {
+      return;
+    }
+
+    let isActive = true;
+
+    const renderMap = () => {
+      if (!isActive || !mapContainerRef.current || !window.google?.maps) {
+        return;
+      }
+
+      const map = new window.google.maps.Map(mapContainerRef.current, {
+        center: KOCHI_CITY_COORDINATES,
+        zoom: 12,
+      });
+      const infoWindow = new window.google.maps.InfoWindow();
+      const bounds = new window.google.maps.LatLngBounds();
+
+      mappableShops.forEach((shop) => {
+        if (shop.latitude == null || shop.longitude == null) {
+          return;
+        }
+
+        const position = { lat: shop.latitude, lng: shop.longitude };
+        const marker = new window.google.maps.Marker({
+          map,
+          position,
+          title: shop.name,
+        });
+
+        const detailUrl = `/shops/${shop.id}`;
+        const content = `
+          <div>
+            <h3>${shop.name}</h3>
+            <p>地域: ${shop.region}</p>
+            <p>ラーメンの種類: ${shop.ramenType}</p>
+            <p>評価: ⭐ ${shop.rating.toFixed(1)}</p>
+            <a href="${detailUrl}">詳細ページを見る</a>
+          </div>
+        `;
+
+        marker.addListener('click', () => {
+          infoWindow.setContent(content);
+          infoWindow.open({ map, anchor: marker });
+        });
+
+        bounds.extend(position);
+      });
+
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds);
+      }
+    };
+
+    const scriptId = 'google-maps-javascript-api';
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existingScript) {
+      if (window.google?.maps) {
+        setMapsLoadError(null);
+        renderMap();
+        return;
+      }
+
+      existingScript.addEventListener('load', renderMap, { once: true });
+      existingScript.addEventListener(
+        'error',
+        () => {
+          if (isActive) {
+            setMapsLoadError('Google Maps JavaScript APIの読み込みに失敗しました。時間をおいて再度お試しください。');
+          }
+        },
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', () => {
+      setMapsLoadError(null);
+      renderMap();
+    });
+    script.addEventListener('error', () => {
+      if (isActive) {
+        setMapsLoadError('Google Maps JavaScript APIの読み込みに失敗しました。時間をおいて再度お試しください。');
+      }
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      isActive = false;
+    };
+  }, [mappableShops]);
+
 
   const handleDelete = async (shopId: string) => {
     if (!isAdmin) {
@@ -119,6 +231,19 @@ export function ShopsPage() {
       {flashMessage ? <p className="status-ok">{flashMessage}</p> : null}
       {isLoading ? <p>店舗データを読み込み中です...</p> : null}
       {loadError ? <p className="status-error">{loadError}</p> : null}
+
+      <section className="card shop-map-section" aria-label="地図で見る">
+        <h2>地図で見る</h2>
+        {!googleMapsEmbedApiKey ? (
+          <p className="shop-map-message">Google Maps APIキーが未設定です</p>
+        ) : mapsLoadError ? (
+          <p className="status-error">{mapsLoadError}</p>
+        ) : mappableShops.length === 0 ? (
+          <p className="shop-map-message">地図表示できる店舗がありません（位置情報未設定）。</p>
+        ) : (
+          <div ref={mapContainerRef} className="shops-map-canvas" />
+        )}
+      </section>
 
       <div className="shop-list">
         {filteredShops.map((shop) => {
