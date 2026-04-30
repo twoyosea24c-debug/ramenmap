@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,7 @@ type ShopFormErrors = Partial<Record<keyof ShopFormValues, string>>;
 export function EditShopPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { shops, updateShop } = useShops();
+  const { shops, reloadShops, updateShop } = useShops();
   const { isAdmin } = useAuth();
   const shop = shops.find((item) => item.id === id);
 
@@ -75,6 +75,13 @@ export function EditShopPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValues(initialValues);
+    setErrors({});
+    setSubmitError(null);
+    setGeocodeError(null);
+  }, [initialValues]);
 
   const onChange = (field: keyof ShopFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -157,7 +164,10 @@ export function EditShopPage() {
         imageUrl = await uploadShopImage(imageFile);
       }
 
-      const result = await updateShop(shop.id, {
+      const latitudeValue = values.latitude.trim();
+      const longitudeValue = values.longitude.trim();
+
+      const payload = {
         name: values.name.trim(),
         region: values.region.trim(),
         address: values.address.trim(),
@@ -165,13 +175,16 @@ export function EditShopPage() {
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
         recommendation: values.recommendation.trim(),
-        latitude: values.latitude.trim() ? Number(values.latitude) : null,
-        longitude: values.longitude.trim() ? Number(values.longitude) : null,
+        latitude: latitudeValue ? Number(latitudeValue) : null,
+        longitude: longitudeValue ? Number(longitudeValue) : null,
         imageUrl,
-      });
+      };
+
+      const result = await updateShop(shop.id, payload);
+      await reloadShops();
 
       sessionStorage.setItem('ramenmap:update-shop-flash', result.message);
-      navigate(`/shops/${result.shop.id}`);
+      navigate(`/shops/${shop.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : '更新に失敗しました。';
       setSubmitError(message);
