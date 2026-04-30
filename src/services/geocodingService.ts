@@ -48,12 +48,32 @@ const getGeocodingApiKey = () => {
   return { apiKey: '', isLegacyFallback: false };
 };
 
+const getMapsEmbedApiKey = () => {
+  const embedApiKey = import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY?.trim();
+  if (embedApiKey) {
+    return embedApiKey;
+  }
+
+  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+  if (mapsApiKey) {
+    return mapsApiKey;
+  }
+
+  return '';
+};
+
+export const googleMapsEmbedApiKey = getMapsEmbedApiKey();
+
 const buildErrorDetail = (address: string, status: string, errorMessage: string, isLegacyFallback: boolean) => {
   const detailLines = [
+    '住所から位置情報を取得できませんでした。',
     `住所: ${address}`,
-    `status: ${status}`,
-    `error_message: ${errorMessage}`,
+    `Geocoding status: ${status}`,
   ];
+
+  if (errorMessage.trim()) {
+    detailLines.push(`Geocoding error_message: ${errorMessage}`);
+  }
 
   if (isLegacyFallback) {
     detailLines.push('後方互換キーを使用中');
@@ -90,12 +110,8 @@ export async function geocodeJapaneseAddress(address: string): Promise<GeocodeRe
 
   const data = (await response.json()) as GeocodingApiResponse;
 
-  if (data.status === 'ZERO_RESULTS') {
-    throw new Error(buildErrorDetail(address.trim(), data.status, data.error_message ?? '住所に一致する結果がありません', isLegacyFallback));
-  }
-
   if (data.status !== 'OK' || !data.results?.length) {
-    throw new Error(buildErrorDetail(address.trim(), data.status, data.error_message ?? '位置情報の取得に失敗しました', isLegacyFallback));
+    throw new Error(buildErrorDetail(address.trim(), data.status, data.error_message ?? '', isLegacyFallback));
   }
 
   const firstCandidate = data.results[0];
