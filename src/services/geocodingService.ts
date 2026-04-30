@@ -35,9 +35,9 @@ const withJapanHint = (address: string) => {
 };
 
 export async function geocodeJapaneseAddress(address: string): Promise<GeocodeResult> {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+  const apiKey = (import.meta.env.VITE_GOOGLE_GEOCODING_API_KEY ?? import.meta.env.VITE_GOOGLE_MAPS_API_KEY)?.trim();
   if (!apiKey) {
-    throw new Error('Google Maps APIキーが未設定です');
+    throw new Error('Geocoding APIキーが未設定です');
   }
 
   const hintedAddress = withJapanHint(address);
