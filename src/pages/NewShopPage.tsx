@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
+import { geocodeJapaneseAddress } from '../services/geocodingService';
 
 type ShopFormValues = {
   name: string;
@@ -39,10 +40,15 @@ export function NewShopPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
   const onChange = (field: keyof ShopFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+    if (field === 'address' || field === 'latitude' || field === 'longitude') {
+      setGeocodeError(null);
+    }
   };
 
   const validate = (): ShopFormErrors => {
@@ -86,6 +92,32 @@ export function NewShopPage() {
   };
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleGeocode = async () => {
+    if (!values.address.trim()) {
+      setGeocodeError('住所を入力してください');
+      return;
+    }
+
+    setGeocodeError(null);
+    setIsGeocoding(true);
+
+    try {
+      const result = await geocodeJapaneseAddress(values.address);
+      setValues((prev) => ({
+        ...prev,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      }));
+      setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '住所から位置情報を取得できませんでした。';
+      setGeocodeError(message);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -159,6 +191,10 @@ export function NewShopPage() {
         <div>
           <label htmlFor="address">住所</label>
           <input id="address" value={values.address} onChange={(e) => onChange('address', e.target.value)} />
+          <button type="button" className="button-secondary address-geocode-button" onClick={handleGeocode} disabled={isGeocoding}>
+            {isGeocoding ? '取得中...' : '住所から位置取得'}
+          </button>
+          {geocodeError ? <p className="form-error">{geocodeError}</p> : null}
         </div>
 
         <div>

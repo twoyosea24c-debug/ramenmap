@@ -483,6 +483,10 @@ body {
   font: inherit;
 }
 
+
+.address-geocode-button {
+  margin-top: 0.45rem;
+}
 .required {
   color: #b91c1c;
 }
