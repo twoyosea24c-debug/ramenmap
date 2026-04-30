@@ -34,8 +34,36 @@ const withJapanHint = (address: string) => {
   return `${trimmedAddress}, 日本`;
 };
 
+const getGeocodingApiKey = () => {
+  const geocodingApiKey = import.meta.env.VITE_GOOGLE_GEOCODING_API_KEY?.trim();
+  if (geocodingApiKey) {
+    return { apiKey: geocodingApiKey, isLegacyFallback: false };
+  }
+
+  const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim();
+  if (mapsApiKey) {
+    return { apiKey: mapsApiKey, isLegacyFallback: true };
+  }
+
+  return { apiKey: '', isLegacyFallback: false };
+};
+
+const buildErrorDetail = (address: string, status: string, errorMessage: string, isLegacyFallback: boolean) => {
+  const detailLines = [
+    `住所: ${address}`,
+    `status: ${status}`,
+    `error_message: ${errorMessage}`,
+  ];
+
+  if (isLegacyFallback) {
+    detailLines.push('後方互換キーを使用中');
+  }
+
+  return detailLines.join('\n');
+};
+
 export async function geocodeJapaneseAddress(address: string): Promise<GeocodeResult> {
-  const apiKey = (import.meta.env.VITE_GOOGLE_GEOCODING_API_KEY ?? import.meta.env.VITE_GOOGLE_MAPS_API_KEY)?.trim();
+  const { apiKey, isLegacyFallback } = getGeocodingApiKey();
   if (!apiKey) {
     throw new Error('Geocoding APIキーが未設定です');
   }
@@ -55,21 +83,19 @@ export async function geocodeJapaneseAddress(address: string): Promise<GeocodeRe
   const response = await fetch(`${GOOGLE_GEOCODING_ENDPOINT}?${params.toString()}`);
 
   if (!response.ok) {
-    throw new Error('住所から位置情報を取得できませんでした。時間をおいて再度お試しください。');
+    throw new Error(
+      buildErrorDetail(address.trim(), `HTTP_${response.status}`, 'HTTPリクエストに失敗しました', isLegacyFallback),
+    );
   }
 
   const data = (await response.json()) as GeocodingApiResponse;
 
-  if (data.status === 'REQUEST_DENIED') {
-    throw new Error('Geocoding APIの利用が拒否されました。API設定を確認してください。');
-  }
-
   if (data.status === 'ZERO_RESULTS') {
-    throw new Error('住所に一致する位置情報が見つかりませんでした。住所を詳しく入力してください。');
+    throw new Error(buildErrorDetail(address.trim(), data.status, data.error_message ?? '住所に一致する結果がありません', isLegacyFallback));
   }
 
   if (data.status !== 'OK' || !data.results?.length) {
-    throw new Error(data.error_message || '位置情報の取得に失敗しました。');
+    throw new Error(buildErrorDetail(address.trim(), data.status, data.error_message ?? '位置情報の取得に失敗しました', isLegacyFallback));
   }
 
   const firstCandidate = data.results[0];
