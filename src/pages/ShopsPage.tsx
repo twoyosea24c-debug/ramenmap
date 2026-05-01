@@ -13,6 +13,7 @@ import { isRegionOption } from '../constants/shopOptions';
 const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
 const MANUAL_REFERENCE_POINT_KEY = 'ramenmap:manual-reference-point';
 const DISTANCE_SOURCE_MODE_KEY = 'ramenmap:distance-source-mode';
+const LAST_CSV_EXPORT_AT_KEY = 'ramenmap:last-csv-export-at';
 const DEFAULT_REFERENCE_NAME = '現在地';
 const KOCHI_STATION_REFERENCE = { name: '高知駅', lat: 33.5663, lng: 133.543 };
 type DistanceSourceMode = 'current' | 'manual';
@@ -119,6 +120,7 @@ export function ShopsPage() {
   const [isImportingCsv, setIsImportingCsv] = useState(false);
   const [allowDuplicateImport, setAllowDuplicateImport] = useState(false);
   const [csvSkippedDuplicates, setCsvSkippedDuplicates] = useState<Array<{ name: string; address: string }>>([]);
+  const [lastCsvExportAt, setLastCsvExportAt] = useState<string | null>(null);
   useEffect(() => {
     const message = sessionStorage.getItem('ramenmap:save-shop-flash');
     if (!message) {
@@ -159,6 +161,16 @@ export function ShopsPage() {
     const savedMode = getLocalStorageItem(DISTANCE_SOURCE_MODE_KEY);
     if (savedMode === 'current' || savedMode === 'manual') {
       setDistanceSourceMode(savedMode);
+    }
+  }, []);
+  useEffect(() => {
+    const saved = getLocalStorageItem(LAST_CSV_EXPORT_AT_KEY);
+    if (!saved) {
+      return;
+    }
+    const parsed = Number(saved);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      setLastCsvExportAt(new Date(parsed).toISOString());
     }
   }, []);
   useEffect(() => {
@@ -588,6 +600,40 @@ export function ShopsPage() {
     removeFavorite(shopId);
     setFlashMessage(result.message);
   };
+  const handleCsvExport = () => {
+    const headers = ['店舗名', '地域', '住所', 'ラーメンの種類', '評価', '開店時間', '閉店時間', '定休日', '営業時間補足', 'おすすめポイント', '緯度', '経度'];
+    const escapeCsvValue = (value: string | number | null | undefined) => {
+      const normalized = value == null ? '' : String(value);
+      const escaped = normalized.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+    const rows = shops.map((shop) =>
+      [
+        shop.name, shop.region, shop.address, shop.ramenType, shop.rating,
+        shop.openingTime ?? '', shop.closingTime ?? '', shop.closedDays?.join(';') ?? '',
+        shop.businessHoursNote ?? '', shop.recommendation, shop.latitude ?? '', shop.longitude ?? '',
+      ].map((value) => escapeCsvValue(value)).join(','),
+    );
+    const csv = [headers.map((value) => escapeCsvValue(value)).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const now = new Date();
+    anchor.href = url;
+    anchor.download = `ramenmap-shops-${now.toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+
+    const timestamp = now.getTime();
+    setLocalStorageItem(LAST_CSV_EXPORT_AT_KEY, String(timestamp));
+    setLastCsvExportAt(now.toISOString());
+    setFlashMessage('CSVエクスポートを実行しました。');
+  };
+  const lastExportDate = lastCsvExportAt ? new Date(lastCsvExportAt) : null;
+  const isExportStale = lastExportDate ? Date.now() - lastExportDate.getTime() >= 30 * 24 * 60 * 60 * 1000 : false;
+  const lastExportLabel = lastExportDate ? lastExportDate.toLocaleString('ja-JP') : '未実行';
   return (
     <section>
       <div className="page-header">
@@ -598,6 +644,19 @@ export function ShopsPage() {
           </Link>
         ) : null}
       </div>
+      {isAdmin ? (
+        <section className="card">
+          <h2>バックアップ（管理者向け）</h2>
+          <p>店舗データは定期的にCSVエクスポートして保存してください。</p>
+          <p>
+            最終エクスポート日時: <strong>{lastExportLabel}</strong>
+          </p>
+          {isExportStale ? <p className="status-error">⚠️ 最終エクスポートから30日以上経過しています。バックアップを実行してください。</p> : null}
+          <button type="button" className="button-primary" onClick={handleCsvExport}>
+            CSVエクスポート
+          </button>
+        </section>
+      ) : null}
       {isAdmin ? (
         <section className="card">
           <h2>CSVインポート（管理者向け）</h2>
