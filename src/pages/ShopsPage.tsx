@@ -494,7 +494,7 @@ export function ShopsPage() {
       {isLoading ? <p>店舗データを読み込み中です...</p> : null}
       {loadError ? <p className="status-error">{loadError}</p> : null}
 
-      <section className="card shop-map-section" aria-label="地図で見る">
+      <section id="shops-map" className="card shop-map-section" aria-label="地図で見る">
         <h2>地図で見る</h2>
         {!googleMapsEmbedApiKey ? (
           <p className="shop-map-message">Google Maps APIキーが未設定です</p>

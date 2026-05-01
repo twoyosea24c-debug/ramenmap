@@ -648,3 +648,59 @@ body {
 .auth-wrapper {
   max-width: 560px;
 }
+
+.landing-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.landing-hero {
+  padding: 2rem 1.4rem;
+}
+
+.landing-brand {
+  margin: 0;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.landing-description {
+  max-width: 60ch;
+}
+
+.feature-section h2 {
+  margin-top: 0;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.feature-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem;
+  background: #f8fafc;
+}
+
+.feature-item h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.feature-item p {
+  margin: 0;
+  color: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero {
+    padding: 1.4rem 1rem;
+  }
+}
