@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 import { geocodeJapaneseAddress } from '../services/geocodingService';
 import { WEEKDAY_OPTIONS } from '../utils/businessHours';
+import { RAMEN_TYPE_OPTIONS, REGION_OPTIONS, withLegacyOption } from '../constants/shopOptions';
 
 const GOOGLE_MAPS_EMBED_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY as string | undefined;
 
@@ -119,6 +120,8 @@ export function NewShopPage() {
   };
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const regionOptions = withLegacyOption(REGION_OPTIONS, values.region);
+  const ramenTypeOptions = withLegacyOption(RAMEN_TYPE_OPTIONS, values.ramenType);
 
   const handleGeocode = async () => {
     if (!values.address.trim()) {
@@ -215,7 +218,14 @@ export function NewShopPage() {
 
         <div>
           <label htmlFor="region">地域 <span className="required">*</span></label>
-          <input id="region" value={values.region} onChange={(e) => onChange('region', e.target.value)} />
+          <select id="region" value={values.region} onChange={(e) => onChange('region', e.target.value)}>
+            <option value="">選択してください</option>
+            {regionOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
           {errors.region ? <p className="form-error">{errors.region}</p> : null}
         </div>
 
@@ -232,11 +242,14 @@ export function NewShopPage() {
 
         <div>
           <label htmlFor="ramenType">ラーメンの種類 <span className="required">*</span></label>
-          <input
-            id="ramenType"
-            value={values.ramenType}
-            onChange={(e) => onChange('ramenType', e.target.value)}
-          />
+          <select id="ramenType" value={values.ramenType} onChange={(e) => onChange('ramenType', e.target.value)}>
+            <option value="">選択してください</option>
+            {ramenTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
           {errors.ramenType ? <p className="form-error">{errors.ramenType}</p> : null}
         </div>
 
