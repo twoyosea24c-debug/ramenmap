@@ -304,6 +304,46 @@ body {
   gap: 0.4rem;
 }
 
+.data-quality-check {
+  margin-top: 1.2rem;
+}
+
+.data-quality-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.data-quality-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: #fcfcfc;
+}
+
+.data-quality-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.data-quality-card-header h3 {
+  margin: 0;
+}
+
+.data-quality-card ul {
+  margin: 0.7rem 0;
+  padding-left: 1.1rem;
+}
+
+.data-quality-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
 @media (max-width: 768px) {
   .header-inner {
     align-items: flex-start;
