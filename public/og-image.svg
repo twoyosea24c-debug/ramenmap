@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">ラーメンマップ OGP画像</title>
+  <desc id="desc">淡い赤の背景にラーメンマップのタイトル、サブコピー、地図ピンとラーメン鉢のアイコンを配置したSNS共有用画像</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffaf9" />
+      <stop offset="100%" stop-color="#ffe5e1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1010" cy="120" r="120" fill="#ffd7d1" opacity="0.45" />
+  <circle cx="150" cy="560" r="180" fill="#ffe4df" opacity="0.5" />
+
+  <g transform="translate(125 140)">
+    <path d="M90 10C49 10 16 43 16 84c0 56 74 150 74 150s74-94 74-150c0-41-33-74-74-74z" fill="#ef4444" />
+    <circle cx="90" cy="84" r="32" fill="#fff5f5" />
+
+    <g transform="translate(190 40)">
+      <ellipse cx="150" cy="135" rx="120" ry="36" fill="#f87171" />
+      <ellipse cx="150" cy="128" rx="104" ry="24" fill="#fff" />
+      <path d="M46 128h208c0 62-44 100-104 100S46 190 46 128z" fill="#fee2e2" stroke="#fca5a5" stroke-width="6" />
+      <path d="M98 94c-10 16-10 28 0 40M150 88c-10 16-10 28 0 40M202 94c-10 16-10 28 0 40" fill="none" stroke="#ef4444" stroke-linecap="round" stroke-width="8" />
+    </g>
+  </g>
+
+  <text x="610" y="295" text-anchor="middle" font-size="92" font-weight="700" fill="#7f1d1d" font-family="'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">ラーメンマップ</text>
+  <text x="610" y="365" text-anchor="middle" font-size="42" fill="#991b1b" font-family="'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">近くの一杯を、地図から探す</text>
+</svg>
