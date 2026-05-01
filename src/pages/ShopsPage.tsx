@@ -431,7 +431,7 @@ export function ShopsPage() {
       const duplicateKey = `${normalizeDuplicateKeyValue(values.name)}::${normalizeDuplicateKeyValue(values.address)}`;
       const isDuplicateWithExisting = Boolean(values.name.trim()) && Boolean(values.address.trim()) && existingDuplicateKeys.has(duplicateKey);
       if (isDuplicateWithExisting) {
-        warnings.push('既存店舗と重複の可能性があります（店舗名+住所）。');
+        warnings.push('既存店舗と重複');
       }
       return { rowNumber: index + 2, values, errors, warnings, isDuplicateWithExisting, isDuplicateInCsv: false };
     });
@@ -449,12 +449,19 @@ export function ShopsPage() {
       if (indexes.length < 2) return;
       indexes.forEach((idx) => {
         previewRows[idx].isDuplicateInCsv = true;
-        previewRows[idx].warnings.push('CSV内で重複しています（店舗名+住所）。');
+        previewRows[idx].warnings.push('CSV内で重複');
       });
     });
     setCsvPreviewRows(previewRows);
     setAllowDuplicateImport(false);
   };
+  const csvErrorCount = csvPreviewRows.filter((row) => row.errors.length > 0).length;
+  const csvDuplicateSkipCount = allowDuplicateImport
+    ? 0
+    : csvPreviewRows.filter((row) => row.errors.length === 0 && (row.isDuplicateInCsv || row.isDuplicateWithExisting)).length;
+  const csvPlannedImportCount = csvPreviewRows.filter(
+    (row) => row.errors.length === 0 && (allowDuplicateImport || (!row.isDuplicateInCsv && !row.isDuplicateWithExisting)),
+  ).length;
   const handleCsvImport = async () => {
     const validRows = csvPreviewRows.filter((row) => row.errors.length === 0);
     const duplicateRows = validRows.filter((row) => row.isDuplicateInCsv || row.isDuplicateWithExisting);
@@ -504,7 +511,7 @@ export function ShopsPage() {
         };
       });
       const result = await importShops(inputs);
-      setCsvImportMessage(`登録件数: ${result.count}件 / 重複スキップ件数: ${allowDuplicateImport ? 0 : duplicateRows.length}件 / エラー件数: ${csvPreviewRows.length - validRows.length}件`);
+      setCsvImportMessage(`登録件数: ${result.count}件 / 重複スキップ件数: ${allowDuplicateImport ? 0 : duplicateRows.length}件 / エラー件数: ${csvErrorCount}件`);
       setCsvPreviewRows([]);
       setAllowDuplicateImport(false);
     } catch (error) {
@@ -564,7 +571,12 @@ export function ShopsPage() {
                   </tbody>
                 </table>
               </div>
-              <button type="button" className="button-primary" onClick={() => void handleCsvImport()} disabled={isImportingCsv || csvPreviewRows.every((row) => row.errors.length > 0)}>
+              <div>
+                <p>登録予定件数: {csvPlannedImportCount}件</p>
+                <p>重複スキップ件数: {csvDuplicateSkipCount}件</p>
+                <p>エラー件数: {csvErrorCount}件</p>
+              </div>
+              <button type="button" className="button-primary" onClick={() => void handleCsvImport()} disabled={isImportingCsv || csvPlannedImportCount === 0}>
                 {isImportingCsv ? '登録中...' : 'プレビュー内容を登録'}
               </button>
             </>
