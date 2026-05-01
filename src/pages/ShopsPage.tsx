@@ -659,21 +659,22 @@ export function ShopsPage() {
         ) : null}
       </div>
       {isAdmin ? (
-        <section className="card">
+        <section id="backup-status" className="card">
           <h2>バックアップ（管理者向け）</h2>
           <p>店舗データは定期的にCSVエクスポートして保存してください。</p>
           <p>
             最終エクスポート日時: <strong>{lastExportLabel}</strong>
           </p>
           {isExportStale ? <p className="status-error">⚠️ 最終エクスポートから30日以上経過しています。バックアップを実行してください。</p> : null}
-          <button type="button" className="button-primary" onClick={handleCsvExport}>
+          <button id="csv-export" type="button" className="button-primary" onClick={handleCsvExport}>
             CSVエクスポート
           </button>
         </section>
       ) : null}
       {isAdmin ? (
-        <section className="card">
+        <section id="csv-import" className="card">
           <h2>CSVインポート（管理者向け）</h2>
+          <p id="csv-template">CSVテンプレートは、UTF-8のCSVでヘッダーを既存形式に合わせて作成してください。</p>
           <input type="file" accept=".csv,text/csv" onChange={(event) => void handleCsvFileChange(event)} />
           {csvImportMessage ? <p className={csvImportMessage.includes('失敗') || csvImportMessage.includes('エラー') ? 'status-error' : 'status-ok'}>{csvImportMessage}</p> : null}
           {csvSkippedDuplicates.length > 0 ? (
