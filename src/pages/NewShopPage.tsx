@@ -15,9 +15,9 @@ type ShopFormValues = {
   ramenType: string;
   rating: string;
   businessHours: string;
-  openTime: string;
-  closeTime: string;
-  regularHolidays: string[];
+  openingTime: string;
+  closingTime: string;
+  closedDays: string[];
   businessHoursNote: string;
   recommendation: string;
   latitude: string;
@@ -33,9 +33,9 @@ const initialValues: ShopFormValues = {
   ramenType: '',
   rating: '',
   businessHours: '',
-  openTime: '',
-  closeTime: '',
-  regularHolidays: [],
+  openingTime: '',
+  closingTime: '',
+  closedDays: [],
   businessHoursNote: '',
   recommendation: '',
   latitude: '',
@@ -182,9 +182,9 @@ export function NewShopPage() {
         ramenType: values.ramenType.trim(),
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
-        openTime: values.openTime.trim(),
-        closeTime: values.closeTime.trim(),
-        regularHolidays: values.regularHolidays,
+        openingTime: values.openingTime.trim(),
+        closingTime: values.closingTime.trim(),
+        closedDays: values.closedDays,
         businessHoursNote: values.businessHoursNote.trim(),
         recommendation: values.recommendation.trim(),
         latitude: values.latitude.trim() ? Number(values.latitude) : null,
@@ -255,22 +255,23 @@ export function NewShopPage() {
         </div>
 
         <div>
-          <label htmlFor="businessHours">営業時間</label>
+          <label htmlFor="businessHours">営業時間補足（旧データ）</label>
           <input
             id="businessHours"
             value={values.businessHours}
             onChange={(e) => onChange('businessHours', e.target.value)}
+            placeholder="例: 昼のみ営業 / 旧データのメモ"
           />
         </div>
 
         <div>
-          <label htmlFor="openTime">開店時間</label>
-          <input id="openTime" type="time" value={values.openTime} onChange={(e) => onChange('openTime', e.target.value)} />
+          <label htmlFor="openingTime">開店時間</label>
+          <input id="openingTime" type="time" value={values.openingTime} onChange={(e) => onChange('openingTime', e.target.value)} />
         </div>
 
         <div>
-          <label htmlFor="closeTime">閉店時間</label>
-          <input id="closeTime" type="time" value={values.closeTime} onChange={(e) => onChange('closeTime', e.target.value)} />
+          <label htmlFor="closingTime">閉店時間</label>
+          <input id="closingTime" type="time" value={values.closingTime} onChange={(e) => onChange('closingTime', e.target.value)} />
         </div>
 
         <fieldset>
@@ -280,12 +281,12 @@ export function NewShopPage() {
               <label key={day}>
                 <input
                   type="checkbox"
-                  checked={values.regularHolidays.includes(day)}
+                  checked={values.closedDays.includes(day)}
                   onChange={(e) => {
                     const next = e.target.checked
-                      ? [...values.regularHolidays, day]
-                      : values.regularHolidays.filter((item) => item !== day);
-                    setValues((prev) => ({ ...prev, regularHolidays: next }));
+                      ? [...values.closedDays, day]
+                      : values.closedDays.filter((item) => item !== day);
+                    setValues((prev) => ({ ...prev, closedDays: next }));
                   }}
                 />
                 {day}
