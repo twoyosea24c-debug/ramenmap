@@ -6,6 +6,7 @@ import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
+import { appendAdminOperationLog } from '../services/adminOperationLogService';
 
 export function ShopDetailPage() {
   const { id } = useParams();
@@ -57,10 +58,12 @@ export function ShopDetailPage() {
 
     const result = await deleteShop(shop.id);
     if (!result.deleted) {
+      appendAdminOperationLog({ operationType: '店舗削除', target: shop.name, result: '失敗', message: result.message });
       setFlashMessage(result.message);
       return;
     }
 
+    appendAdminOperationLog({ operationType: '店舗削除', target: shop.name, result: '成功', message: result.message });
     removeFavorite(shop.id);
     navigate('/shops');
   };

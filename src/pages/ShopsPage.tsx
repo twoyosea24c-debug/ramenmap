@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
 import { fetchSupabaseShopNameAddresses } from '../services/supabaseShopService';
 import { normalizeShopKey } from '../utils/shopKey';
+import { appendAdminOperationLog } from '../services/adminOperationLogService';
 import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isRegionOption } from '../constants/shopOptions';
@@ -526,11 +527,15 @@ export function ShopsPage() {
     const { rowsToImport, duplicateRows } = summarizeImportRows(latestDuplicateKeys);
 
     if (validRows.length === 0) {
-      setCsvImportMessage('登録可能な行がありません。エラーを修正してください。');
+      const message = '登録可能な行がありません。エラーを修正してください。';
+      appendAdminOperationLog({ operationType: 'CSVインポート', target: '0件', result: '失敗', message });
+      setCsvImportMessage(message);
       return;
     }
     if (rowsToImport.length === 0) {
       setCsvSkippedDuplicates(duplicateRows.map((row) => ({ name: row.values.name.trim(), address: row.values.address.trim() })));
+      const message = `登録件数: 0件 / 重複スキップ件数: ${duplicateRows.length}件 / エラー件数: ${csvErrorCount}件`;
+      appendAdminOperationLog({ operationType: 'CSVインポート', target: '0件', result: '成功', message });
       setCsvImportMessage('登録対象がありません');
       return;
     }
@@ -574,11 +579,15 @@ export function ShopsPage() {
       const result = await importShops(inputs);
       const skippedDuplicates = allowDuplicateImport ? [] : duplicateRows.map((row) => ({ name: row.values.name.trim(), address: row.values.address.trim() }));
       setCsvSkippedDuplicates(skippedDuplicates);
-      setCsvImportMessage(`登録件数: ${result.count}件 / 重複スキップ件数: ${skippedDuplicates.length}件 / エラー件数: ${csvErrorCount}件`);
+      const message = `登録件数: ${result.count}件 / 重複スキップ件数: ${skippedDuplicates.length}件 / エラー件数: ${csvErrorCount}件`;
+      appendAdminOperationLog({ operationType: 'CSVインポート', target: `${result.count}件`, result: '成功', message });
+      setCsvImportMessage(message);
       setCsvPreviewRows([]);
       setAllowDuplicateImport(false);
     } catch (error) {
-      setCsvImportMessage(error instanceof Error ? error.message : 'CSVインポートに失敗しました。');
+      const message = error instanceof Error ? error.message : 'CSVインポートに失敗しました。';
+      appendAdminOperationLog({ operationType: 'CSVインポート', target: `${rowsToImport.length}件`, result: '失敗', message });
+      setCsvImportMessage(message);
     } finally {
       setIsImportingCsv(false);
     }
@@ -592,11 +601,14 @@ export function ShopsPage() {
     if (!shouldDelete) {
       return;
     }
+    const shopToDelete = shops.find((shop) => shop.id === shopId);
     const result = await deleteShop(shopId);
     if (!result.deleted) {
+      appendAdminOperationLog({ operationType: '店舗削除', target: shopToDelete?.name ?? '不明な店舗', result: '失敗', message: result.message });
       setFlashMessage(result.message);
       return;
     }
+    appendAdminOperationLog({ operationType: '店舗削除', target: shopToDelete?.name ?? '不明な店舗', result: '成功', message: result.message });
     removeFavorite(shopId);
     setFlashMessage(result.message);
   };
@@ -629,6 +641,8 @@ export function ShopsPage() {
     const timestamp = now.getTime();
     setLocalStorageItem(LAST_CSV_EXPORT_AT_KEY, String(timestamp));
     setLastCsvExportAt(now.toISOString());
+    const exportMessage = `エクスポート件数: ${shops.length}件`;
+    appendAdminOperationLog({ operationType: 'CSVエクスポート', target: `${shops.length}件`, result: '成功', message: exportMessage });
     setFlashMessage('CSVエクスポートを実行しました。');
   };
   const lastExportDate = lastCsvExportAt ? new Date(lastCsvExportAt) : null;

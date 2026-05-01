@@ -4,6 +4,7 @@ import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 import { geocodeJapaneseAddress } from '../services/geocodingService';
+import { appendAdminOperationLog } from '../services/adminOperationLogService';
 import { WEEKDAY_OPTIONS } from '../utils/businessHours';
 import { RAMEN_TYPE_OPTIONS, REGION_OPTIONS, withLegacyOption } from '../constants/shopOptions';
 
@@ -217,10 +218,22 @@ export function EditShopPage() {
       const result = await updateShop(shop.id, payload);
       await reloadShops();
 
+      appendAdminOperationLog({
+        operationType: '店舗編集',
+        target: values.name.trim() || shop.name,
+        result: '成功',
+        message: result.message,
+      });
       sessionStorage.setItem('ramenmap:update-shop-flash', result.message);
       navigate(`/shops/${shop.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : '更新に失敗しました。';
+      appendAdminOperationLog({
+        operationType: '店舗編集',
+        target: values.name.trim() || shop.name,
+        result: '失敗',
+        message,
+      });
       setSubmitError(message);
     } finally {
       setIsUploadingImage(false);

@@ -1,10 +1,14 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useShops } from '../context/ShopsContext';
+import { clearAdminOperationLogs, getAdminOperationLogs } from '../services/adminOperationLogService';
 
 export function AdminPage() {
   const { isLoading, isLoggedIn, isAdmin, session } = useAuth();
   const { shops } = useShops();
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const operationLogs = useMemo(() => getAdminOperationLogs(), [historyVersion]);
 
   const qualityRows = [...shops]
     .map((shop) => {
@@ -31,6 +35,16 @@ export function AdminPage() {
 
   const sufficientShopCount = qualityRows.filter((row) => row.missingCount === 0).length;
   const insufficientShopCount = qualityRows.length - sufficientShopCount;
+
+  const handleClearHistory = () => {
+    const confirmed = window.confirm('操作履歴をすべて削除します。よろしいですか？');
+    if (!confirmed) {
+      return;
+    }
+
+    clearAdminOperationLogs();
+    setHistoryVersion((prev) => prev + 1);
+  };
 
   if (isLoading) {
     return <p>認証情報を確認中です...</p>;
@@ -79,6 +93,38 @@ export function AdminPage() {
               Supabase店舗確認ページへ
             </Link>
           </div>
+
+
+
+          <section className="data-quality-check" aria-label="操作履歴">
+            <h2>操作履歴</h2>
+            <p>最新20件を表示しています。</p>
+            <button type="button" className="button-secondary" onClick={handleClearHistory}>
+              履歴をクリア
+            </button>
+            {operationLogs.length === 0 ? (
+              <p>履歴はありません。</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table>
+                  <thead>
+                    <tr><th>操作日時</th><th>操作種別</th><th>店舗名/件数</th><th>結果</th><th>補足</th></tr>
+                  </thead>
+                  <tbody>
+                    {operationLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td>{new Date(log.operatedAt).toLocaleString('ja-JP')}</td>
+                        <td>{log.operationType}</td>
+                        <td>{log.target}</td>
+                        <td>{log.result}</td>
+                        <td>{log.message}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
 
           <section className="data-quality-check" aria-label="データ品質チェック">
             <h2>データ品質チェック</h2>
