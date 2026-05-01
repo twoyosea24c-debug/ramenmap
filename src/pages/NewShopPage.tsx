@@ -4,6 +4,7 @@ import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 import { geocodeJapaneseAddress } from '../services/geocodingService';
+import { appendAdminOperationLog } from '../services/adminOperationLogService';
 import { WEEKDAY_OPTIONS } from '../utils/businessHours';
 import { RAMEN_TYPE_OPTIONS, REGION_OPTIONS, withLegacyOption } from '../constants/shopOptions';
 
@@ -195,10 +196,22 @@ export function NewShopPage() {
         imageUrl,
       });
 
+      appendAdminOperationLog({
+        operationType: '店舗登録',
+        target: values.name.trim() || '（店舗名未設定）',
+        result: '成功',
+        message: result.message,
+      });
       sessionStorage.setItem('ramenmap:save-shop-flash', result.message);
       navigate('/shops');
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存に失敗しました。';
+      appendAdminOperationLog({
+        operationType: '店舗登録',
+        target: values.name.trim() || '（店舗名未設定）',
+        result: '失敗',
+        message,
+      });
       setSubmitError(message);
     } finally {
       setIsUploadingImage(false);
