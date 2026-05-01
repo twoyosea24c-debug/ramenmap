@@ -5,29 +5,29 @@ export type HolidayOption = (typeof WEEKDAY_OPTIONS)[number];
 
 type ShopStatus = "open" | "closed" | "holiday" | "unset";
 
-export function formatStructuredHours(shop: Pick<RamenShop, "openTime" | "closeTime" | "regularHolidays" | "businessHoursNote" | "businessHours">): string {
-  if (!shop.openTime || !shop.closeTime) {
+export function formatStructuredHours(shop: Pick<RamenShop, "openingTime" | "closingTime" | "closedDays" | "businessHoursNote" | "businessHours">): string {
+  if (!shop.openingTime || !shop.closingTime) {
     return shop.businessHours?.trim() || "営業時間未設定";
   }
 
-  const holidays = shop.regularHolidays?.length ? ` / 定休日: ${shop.regularHolidays.join("・")}` : "";
+  const holidays = shop.closedDays?.length ? ` / 定休日: ${shop.closedDays.join("・")}` : "";
   const note = shop.businessHoursNote?.trim() ? ` / ${shop.businessHoursNote.trim()}` : "";
-  return `${shop.openTime}〜${shop.closeTime}${holidays}${note}`;
+  return `${shop.openingTime}〜${shop.closingTime}${holidays}${note}`;
 }
 
-export function getShopBusinessStatus(shop: Pick<RamenShop, "openTime" | "closeTime" | "regularHolidays">, now = new Date()): { status: ShopStatus; label: string } {
-  if (!shop.openTime || !shop.closeTime) {
+export function getShopBusinessStatus(shop: Pick<RamenShop, "openingTime" | "closingTime" | "closedDays">, now = new Date()): { status: ShopStatus; label: string } {
+  if (!shop.openingTime || !shop.closingTime) {
     return { status: "unset", label: "営業時間未設定" };
   }
 
   const weekdayMap = ["日", "月", "火", "水", "木", "金", "土"] as const;
   const today = weekdayMap[now.getDay()];
-  if (shop.regularHolidays?.includes("不定休") || shop.regularHolidays?.includes(today)) {
+  if (shop.closedDays?.includes("不定休") || shop.closedDays?.includes(today)) {
     return { status: "holiday", label: "本日定休" };
   }
 
-  const [oh, om] = shop.openTime.split(":").map(Number);
-  const [ch, cm] = shop.closeTime.split(":").map(Number);
+  const [oh, om] = shop.openingTime.split(":").map(Number);
+  const [ch, cm] = shop.closingTime.split(":").map(Number);
   const openMinutes = oh * 60 + om;
   const closeMinutes = ch * 60 + cm;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
