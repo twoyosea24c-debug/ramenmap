@@ -53,14 +53,33 @@ function clampRating(value: number): number {
   return Math.min(5, Math.max(1, Math.round(value)));
 }
 
+let fallbackIdCounter = 0;
+
+function generateUniqueShopId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  fallbackIdCounter += 1;
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).slice(2, 12);
+  return `custom-shop-${timestamp}-${fallbackIdCounter.toString(36)}-${randomPart}`;
+}
+
 function createShopId(name: string): string {
+  const id = generateUniqueShopId();
+
+  if (id.startsWith('custom-shop-') || id.includes('-')) {
+    return id;
+  }
+
   const normalized = name
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\-]/g, '');
 
-  return `custom-${normalized || 'shop'}-${Date.now().toString(36)}`;
+  return `custom-${normalized || 'shop'}-${id}`;
 }
 
 function mapInputToSupabaseRow(input: ShopInput): SupabaseShopInsertRow {
@@ -114,6 +133,16 @@ function normalizeSupabaseError(action: string, message: string): Error {
   if (isRlsError) {
     return new Error(
       `権限不足のため${action}できません。管理者アカウントでログインしてから再試行してください。`,
+    );
+  }
+
+  const isPrimaryKeyDuplicateError =
+    normalized.includes('duplicate key value') &&
+    (normalized.includes('shops_pkey') || normalized.includes('key (id)'));
+
+  if (isPrimaryKeyDuplicateError) {
+    return new Error(
+      `Supabase ${action}に失敗しました: 主キー(id)が重複しました。CSVのid列は使用せず、新しいIDを生成して再試行してください。`,
     );
   }
 
