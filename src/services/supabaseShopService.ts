@@ -155,6 +155,27 @@ export async function insertSupabaseShop(input: ShopInput): Promise<RamenShop> {
   return mapSupabaseRowToShop(data);
 }
 
+export async function insertSupabaseShops(inputs: ShopInput[]): Promise<RamenShop[]> {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase が未設定です');
+  }
+
+  if (inputs.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('shops')
+    .insert(inputs.map(mapInputToSupabaseRow))
+    .select(columns.join(','));
+
+  if (error) {
+    throw normalizeSupabaseError('への一括保存', error.message);
+  }
+
+  return ((data ?? []) as unknown as SupabaseShopRow[]).map(mapSupabaseRowToShop);
+}
+
 export async function updateSupabaseShop(id: string, input: ShopInput): Promise<void> {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
