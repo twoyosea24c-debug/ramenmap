@@ -12,6 +12,8 @@ import { SupabaseShopsPage } from './pages/SupabaseShopsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RequireAdmin } from './components/RequireAdmin';
 import { AdminPage } from './pages/AdminPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="terms" element={<TermsPage />} />
         <Route
           path="settings/supabase"
           element={
