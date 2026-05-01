@@ -149,6 +149,23 @@ function normalizeSupabaseError(action: string, message: string): Error {
   return new Error(`Supabase ${action}に失敗しました: ${message}`);
 }
 
+
+export async function fetchSupabaseShopNameAddresses(): Promise<{ name: string | null; address: string | null }[]> {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase が未設定です');
+  }
+
+  const { data, error } = await supabase
+    .from('shops')
+    .select('name,address');
+
+  if (error) {
+    throw normalizeSupabaseError('から重複判定用データを取得', error.message);
+  }
+
+  return (data ?? []) as { name: string | null; address: string | null }[];
+}
+
 export async function fetchSupabaseShops(): Promise<RamenShop[]> {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase が未設定です');
