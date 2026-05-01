@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 import { geocodeJapaneseAddress } from '../services/geocodingService';
 
+const GOOGLE_MAPS_EMBED_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY as string | undefined;
+
 type ShopFormValues = {
   name: string;
   region: string;
@@ -75,6 +77,22 @@ export function EditShopPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const latitudeValue = values.latitude.trim();
+  const longitudeValue = values.longitude.trim();
+  const parsedLatitude = latitudeValue ? Number(latitudeValue) : null;
+  const parsedLongitude = longitudeValue ? Number(longitudeValue) : null;
+  const hasPreviewCoordinates =
+    parsedLatitude != null
+    && Number.isFinite(parsedLatitude)
+    && parsedLatitude >= -90
+    && parsedLatitude <= 90
+    && parsedLongitude != null
+    && Number.isFinite(parsedLongitude)
+    && parsedLongitude >= -180
+    && parsedLongitude <= 180;
+  const previewMapSrc = hasPreviewCoordinates
+    ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(GOOGLE_MAPS_EMBED_API_KEY ?? '')}&q=${encodeURIComponent(`${parsedLatitude},${parsedLongitude}`)}`
+    : null;
 
   useEffect(() => {
     setValues(initialValues);
@@ -231,6 +249,8 @@ export function EditShopPage() {
           <button type="button" className="button-secondary address-geocode-button" onClick={handleGeocode} disabled={isGeocoding}>
             {isGeocoding ? '取得中...' : '住所から位置取得'}
           </button>
+          <p className="form-hint location-warning">取得結果は必ず地図で確認してください。</p>
+          <p className="form-hint">住所を変更しても地図位置は自動更新されません。「住所から位置取得」を押した場合のみ緯度・経度が更新されます。</p>
           {geocodeError ? <p className="form-error">{geocodeError}</p> : null}
         </div>
 
@@ -292,6 +312,21 @@ export function EditShopPage() {
           />
           {errors.longitude ? <p className="form-error">{errors.longitude}</p> : null}
         </div>
+
+        <section className="form-location-preview" aria-label="位置情報プレビュー">
+          <h2>位置情報プレビュー</h2>
+          <p className="form-hint">緯度・経度を手入力で修正すると、この地図も更新されます。</p>
+          {hasPreviewCoordinates ? (
+            GOOGLE_MAPS_EMBED_API_KEY ? (
+              <iframe title="店舗位置のプレビュー地図" src={previewMapSrc ?? ''} className="shop-map-iframe" loading="lazy" />
+            ) : (
+              <p className="shop-map-message">Google Maps Embed APIキーが未設定です</p>
+            )
+          ) : (
+            <p className="shop-map-message">緯度・経度を入力すると地図を表示できます（緯度 -90〜90 / 経度 -180〜180）。</p>
+          )}
+          {hasPreviewCoordinates ? <p className="form-hint">この位置で保存します: 緯度 {parsedLatitude} / 経度 {parsedLongitude}</p> : null}
+        </section>
 
         <div>
           <label htmlFor="recommendation">おすすめポイント</label>
