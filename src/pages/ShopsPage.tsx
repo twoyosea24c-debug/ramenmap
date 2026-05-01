@@ -6,6 +6,7 @@ import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
 import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
+import { isRegionOption } from '../constants/shopOptions';
 
 const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
 const MANUAL_REFERENCE_POINT_KEY = 'ramenmap:manual-reference-point';
@@ -88,7 +89,12 @@ export function ShopsPage() {
     setLocalStorageItem(DISTANCE_SOURCE_MODE_KEY, distanceSourceMode);
   }, [distanceSourceMode]);
 
-  const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
+  const allRegions = useMemo(() => {
+    const uniqueRegions = Array.from(new Set(shops.map((shop) => shop.region)));
+    const normalized = uniqueRegions.filter((value) => isRegionOption(value));
+    const legacy = uniqueRegions.filter((value) => !isRegionOption(value)).sort();
+    return [...normalized, ...legacy];
+  }, [shops]);
 
   const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
     const earthRadiusKm = 6371;
