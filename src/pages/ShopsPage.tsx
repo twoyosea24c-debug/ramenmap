@@ -4,8 +4,14 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
+import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
 
 const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
+const MANUAL_REFERENCE_POINT_KEY = 'ramenmap:manual-reference-point';
+const DEFAULT_REFERENCE_NAME = '現在地';
+const KOCHI_STATION_REFERENCE = { name: '高知駅', lat: 33.5663, lng: 133.543 };
+type DistanceSourceMode = 'current' | 'manual';
+type ManualReferencePoint = { name: string; lat: number; lng: number };
 
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
@@ -13,6 +19,12 @@ export function ShopsPage() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [sortMode, setSortMode] = useState<'rating' | 'distance'>('rating');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceSourceMode, setDistanceSourceMode] = useState<DistanceSourceMode>('current');
+  const [manualReferenceName, setManualReferenceName] = useState('');
+  const [manualLatitude, setManualLatitude] = useState('');
+  const [manualLongitude, setManualLongitude] = useState('');
+  const [manualReferencePoint, setManualReferencePoint] = useState<ManualReferencePoint | null>(null);
+  const [manualReferenceError, setManualReferenceError] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
@@ -36,6 +48,33 @@ export function ShopsPage() {
     }
   }, [reloadShops]);
 
+  useEffect(() => {
+    const saved = getLocalStorageItem(MANUAL_REFERENCE_POINT_KEY);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as ManualReferencePoint;
+      if (
+        typeof parsed.name === 'string' &&
+        typeof parsed.lat === 'number' &&
+        typeof parsed.lng === 'number' &&
+        parsed.lat >= -90 &&
+        parsed.lat <= 90 &&
+        parsed.lng >= -180 &&
+        parsed.lng <= 180
+      ) {
+        setManualReferencePoint(parsed);
+        setManualReferenceName(parsed.name);
+        setManualLatitude(String(parsed.lat));
+        setManualLongitude(String(parsed.lng));
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
+
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
   const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -50,8 +89,20 @@ export function ShopsPage() {
     return earthRadiusKm * c;
   };
 
-  const shopDistances = useMemo(() => {
+  const activeReferencePoint = useMemo(() => {
+    if (distanceSourceMode === 'manual') {
+      return manualReferencePoint;
+    }
+
     if (!userLocation) {
+      return null;
+    }
+
+    return { name: DEFAULT_REFERENCE_NAME, lat: userLocation.lat, lng: userLocation.lng };
+  }, [distanceSourceMode, manualReferencePoint, userLocation]);
+
+  const shopDistances = useMemo(() => {
+    if (!activeReferencePoint) {
       return new Map<string, number>();
     }
 
@@ -60,10 +111,10 @@ export function ShopsPage() {
       if (shop.latitude == null || shop.longitude == null) {
         return;
       }
-      distances.set(shop.id, getDistanceKm(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude));
+      distances.set(shop.id, getDistanceKm(activeReferencePoint.lat, activeReferencePoint.lng, shop.latitude, shop.longitude));
     });
     return distances;
-  }, [shops, userLocation]);
+  }, [activeReferencePoint, shops]);
 
   const filteredShops = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -80,7 +131,7 @@ export function ShopsPage() {
       return regionMatch && keywordMatch;
     });
 
-    if (sortMode === 'distance' && userLocation) {
+    if (sortMode === 'distance' && activeReferencePoint) {
       return result.sort((a, b) => {
         const distanceA = shopDistances.get(a.id);
         const distanceB = shopDistances.get(b.id);
@@ -98,7 +149,7 @@ export function ShopsPage() {
     }
 
     return result.sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
-  }, [keyword, region, shopDistances, shops, sortMode, sortOrder, userLocation]);
+  }, [activeReferencePoint, keyword, region, shopDistances, shops, sortMode, sortOrder]);
 
   const handleGetCurrentLocation = () => {
     if (!('geolocation' in navigator)) {
@@ -132,6 +183,41 @@ export function ShopsPage() {
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
+  };
+
+  const handleSaveManualReferencePoint = () => {
+    const trimmedName = manualReferenceName.trim();
+    if (!trimmedName) {
+      setManualReferenceError('基準地点名を入力してください。');
+      return;
+    }
+
+    const lat = Number(manualLatitude);
+    const lng = Number(manualLongitude);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      setManualReferenceError('緯度は -90〜90 の範囲で入力してください。');
+      return;
+    }
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+      setManualReferenceError('経度は -180〜180 の範囲で入力してください。');
+      return;
+    }
+
+    const point = { name: trimmedName, lat, lng };
+    setManualReferencePoint(point);
+    setManualReferenceError(null);
+    setDistanceSourceMode('manual');
+    setLocalStorageItem(MANUAL_REFERENCE_POINT_KEY, JSON.stringify(point));
+  };
+
+  const applyKochiStationReference = () => {
+    setManualReferenceName(KOCHI_STATION_REFERENCE.name);
+    setManualLatitude(String(KOCHI_STATION_REFERENCE.lat));
+    setManualLongitude(String(KOCHI_STATION_REFERENCE.lng));
+    setManualReferencePoint(KOCHI_STATION_REFERENCE);
+    setManualReferenceError(null);
+    setDistanceSourceMode('manual');
+    setLocalStorageItem(MANUAL_REFERENCE_POINT_KEY, JSON.stringify(KOCHI_STATION_REFERENCE));
   };
 
 
@@ -321,10 +407,58 @@ export function ShopsPage() {
           <button type="button" className="button-secondary location-button" onClick={handleGetCurrentLocation}>
             現在地を取得
           </button>
+          <div>
+            <label htmlFor="distanceSourceMode">距離計算の基準</label>
+            <select
+              id="distanceSourceMode"
+              value={distanceSourceMode}
+              onChange={(e) => setDistanceSourceMode(e.target.value as DistanceSourceMode)}
+            >
+              <option value="current">現在地</option>
+              <option value="manual">手動設定した基準地点</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="manualReferenceName">基準地点名</label>
+            <input
+              id="manualReferenceName"
+              type="text"
+              placeholder="例: 高知駅"
+              value={manualReferenceName}
+              onChange={(e) => setManualReferenceName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="manualLatitude">緯度</label>
+            <input
+              id="manualLatitude"
+              type="number"
+              step="any"
+              value={manualLatitude}
+              onChange={(e) => setManualLatitude(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="manualLongitude">経度</label>
+            <input
+              id="manualLongitude"
+              type="number"
+              step="any"
+              value={manualLongitude}
+              onChange={(e) => setManualLongitude(e.target.value)}
+            />
+          </div>
+          <button type="button" className="button-secondary location-button" onClick={handleSaveManualReferencePoint}>
+            基準地点を手動設定
+          </button>
+          <button type="button" className="button-secondary location-button" onClick={applyKochiStationReference}>
+            高知駅を基準にする
+          </button>
           {locationStatus === 'loading' ? <p className="location-status">現在地を取得中...</p> : null}
           {locationStatus === 'error' && locationError ? <p className="status-error">{locationError}</p> : null}
-          {sortMode === 'distance' && !userLocation ? (
-            <p className="location-status">現在地を取得すると近い順で並び替えできます。</p>
+          {manualReferenceError ? <p className="status-error">{manualReferenceError}</p> : null}
+          {sortMode === 'distance' && !activeReferencePoint ? (
+            <p className="location-status">現在地取得または手動設定を行うと近い順で並び替えできます。</p>
           ) : null}
         </div>
       </form>
@@ -383,8 +517,10 @@ export function ShopsPage() {
               <p>
                 <strong>住所:</strong> {shop.address}
               </p>
-              {shopDistances.get(shop.id) != null ? (
-                <p className="shop-distance">現在地から約{shopDistances.get(shop.id)?.toFixed(1)}km</p>
+              {shopDistances.get(shop.id) != null && activeReferencePoint ? (
+                <p className="shop-distance">
+                  {activeReferencePoint.name}から約{shopDistances.get(shop.id)?.toFixed(1)}km
+                </p>
               ) : null}
               <p>{shop.recommendation}</p>
               <div className="shop-actions">
