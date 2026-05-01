@@ -531,6 +531,23 @@ body {
   font-size: 0.85rem;
 }
 
+.location-warning {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.form-location-preview {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  padding: 0.8rem;
+}
+
+.form-location-preview h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .form-image-preview {
   width: 100%;
   max-width: 300px;
