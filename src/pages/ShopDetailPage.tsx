@@ -1,3 +1,4 @@
+import { formatStructuredHours, getShopBusinessStatus } from '../utils/businessHours';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
@@ -37,6 +38,7 @@ export function ShopDetailPage() {
   }
 
   const favorite = isFavorite(shop.id);
+  const businessStatus = getShopBusinessStatus(shop);
   const hasCoordinates = shop.latitude != null && shop.longitude != null;
   const mapSrc = hasCoordinates
     ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(googleMapsEmbedApiKey ?? '')}&q=${encodeURIComponent(`${shop.latitude},${shop.longitude}`)}`
@@ -66,6 +68,7 @@ export function ShopDetailPage() {
   return (
     <section className="detail-wrapper">
       <h1>{shop.name}</h1>
+      <p>{businessStatus.label}</p>
 
       <article className="card detail-card">
         {flashMessage ? <p className="status-ok">{flashMessage}</p> : null}
@@ -100,7 +103,7 @@ export function ShopDetailPage() {
           </div>
           <div>
             <dt>営業時間</dt>
-            <dd>{shop.businessHours}</dd>
+            <dd>{formatStructuredHours(shop)}</dd>
           </div>
           <div>
             <dt>おすすめポイント</dt>

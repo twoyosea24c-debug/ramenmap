@@ -1,3 +1,4 @@
+import { formatStructuredHours, getShopBusinessStatus } from '../utils/businessHours';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
@@ -509,6 +510,7 @@ export function ShopsPage() {
       <div className="shop-list">
         {filteredShops.map((shop) => {
           const favorite = isFavorite(shop.id);
+          const businessStatus = getShopBusinessStatus(shop);
 
           return (
             <article className="card shop-card" key={shop.id}>
@@ -521,6 +523,7 @@ export function ShopsPage() {
               )}
               <div className="shop-card-header">
                 <h2>{shop.name}</h2>
+                <span>{businessStatus.label}</span>
                 <span className="rating-badge">⭐ {shop.rating.toFixed(1)}</span>
               </div>
 
@@ -535,7 +538,7 @@ export function ShopsPage() {
                 </div>
                 <div>
                   <dt>営業時間</dt>
-                  <dd>{shop.businessHours}</dd>
+                  <dd>{formatStructuredHours(shop)}</dd>
                 </div>
               </dl>
 

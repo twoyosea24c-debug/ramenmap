@@ -5,6 +5,10 @@ export type RamenShop = {
   ramenType: string;
   rating: number;
   businessHours: string;
+  openTime?: string;
+  closeTime?: string;
+  regularHolidays?: string[];
+  businessHoursNote?: string;
   address: string;
   recommendation: string;
   imageUrl?: string;
@@ -25,6 +29,10 @@ export type SupabaseShopRow = {
   ramen_type: string | null;
   rating: number | null;
   business_hours: string | null;
+  open_time: string | null;
+  close_time: string | null;
+  regular_holidays: string[] | null;
+  business_hours_note: string | null;
   recommendation: string | null;
   image_url: string | null;
   latitude: number | null;
@@ -39,6 +47,10 @@ export type SupabaseShopInsertRow = {
   ramen_type: string;
   rating: number;
   business_hours: string;
+  open_time?: string | null;
+  close_time?: string | null;
+  regular_holidays?: string[] | null;
+  business_hours_note?: string | null;
   recommendation: string;
   image_url?: string;
   latitude?: number | null;
@@ -52,6 +64,10 @@ export type SupabaseShopUpdateRow = {
   ramen_type: string;
   rating: number;
   business_hours: string;
+  open_time?: string | null;
+  close_time?: string | null;
+  regular_holidays?: string[] | null;
+  business_hours_note?: string | null;
   recommendation: string;
   image_url?: string;
   latitude?: number | null;

@@ -4,6 +4,7 @@ import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { uploadShopImage, validateShopImageFile } from '../services/shopImageService';
 import { geocodeJapaneseAddress } from '../services/geocodingService';
+import { WEEKDAY_OPTIONS } from '../utils/businessHours';
 
 const GOOGLE_MAPS_EMBED_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY as string | undefined;
 
@@ -14,6 +15,10 @@ type ShopFormValues = {
   ramenType: string;
   rating: string;
   businessHours: string;
+  openTime: string;
+  closeTime: string;
+  regularHolidays: string[];
+  businessHoursNote: string;
   recommendation: string;
   latitude: string;
   longitude: string;
@@ -36,6 +41,10 @@ export function EditShopPage() {
       ramenType: shop?.ramenType ?? '',
       rating: shop ? String(shop.rating) : '',
       businessHours: shop?.businessHours ?? '',
+      openTime: shop?.openTime ?? '',
+      closeTime: shop?.closeTime ?? '',
+      regularHolidays: shop?.regularHolidays ?? [],
+      businessHoursNote: shop?.businessHoursNote ?? '',
       recommendation: shop?.recommendation ?? '',
       latitude: shop?.latitude != null ? String(shop.latitude) : '',
       longitude: shop?.longitude != null ? String(shop.longitude) : '',
@@ -101,7 +110,7 @@ export function EditShopPage() {
     setGeocodeError(null);
   }, [initialValues]);
 
-  const onChange = (field: keyof ShopFormValues, value: string) => {
+  const onChange = (field: keyof ShopFormValues, value: string | string[]) => {
     setValues((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
     if (field === 'address' || field === 'latitude' || field === 'longitude') {
@@ -192,6 +201,10 @@ export function EditShopPage() {
         ramenType: values.ramenType.trim(),
         rating: values.rating.trim() ? Number(values.rating) : 3,
         businessHours: values.businessHours.trim(),
+        openTime: values.openTime.trim(),
+        closeTime: values.closeTime.trim(),
+        regularHolidays: values.regularHolidays,
+        businessHoursNote: values.businessHoursNote.trim(),
         recommendation: values.recommendation.trim(),
         latitude: latitudeValue ? Number(latitudeValue) : null,
         longitude: longitudeValue ? Number(longitudeValue) : null,
@@ -283,6 +296,42 @@ export function EditShopPage() {
             value={values.businessHours}
             onChange={(e) => onChange('businessHours', e.target.value)}
           />
+        </div>
+
+        <div>
+          <label htmlFor="openTime">開店時間</label>
+          <input id="openTime" type="time" value={values.openTime} onChange={(e) => onChange('openTime', e.target.value)} />
+        </div>
+
+        <div>
+          <label htmlFor="closeTime">閉店時間</label>
+          <input id="closeTime" type="time" value={values.closeTime} onChange={(e) => onChange('closeTime', e.target.value)} />
+        </div>
+
+        <fieldset>
+          <legend>定休日</legend>
+          <div className="holiday-checkboxes">
+            {WEEKDAY_OPTIONS.map((day) => (
+              <label key={day}>
+                <input
+                  type="checkbox"
+                  checked={values.regularHolidays.includes(day)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...values.regularHolidays, day]
+                      : values.regularHolidays.filter((item) => item !== day);
+                    setValues((prev) => ({ ...prev, regularHolidays: next }));
+                  }}
+                />
+                {day}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div>
+          <label htmlFor="businessHoursNote">営業時間補足</label>
+          <input id="businessHoursNote" value={values.businessHoursNote} onChange={(e) => onChange('businessHoursNote', e.target.value)} />
         </div>
 
         <div>
