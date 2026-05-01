@@ -11,6 +11,10 @@ export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [sortMode, setSortMode] = useState<'rating' | 'distance'>('rating');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [locationError, setLocationError] = useState<string | null>(null);
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
   const { shops, deleteShop, isLoading, loadError, reloadShops } = useShops();
   const { isAdmin } = useAuth();
@@ -34,11 +38,37 @@ export function ShopsPage() {
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
+  const getDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const earthRadiusKm = 6371;
+    const toRadians = (value: number) => (value * Math.PI) / 180;
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  };
+
+  const shopDistances = useMemo(() => {
+    if (!userLocation) {
+      return new Map<string, number>();
+    }
+
+    const distances = new Map<string, number>();
+    shops.forEach((shop) => {
+      if (shop.latitude == null || shop.longitude == null) {
+        return;
+      }
+      distances.set(shop.id, getDistanceKm(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude));
+    });
+    return distances;
+  }, [shops, userLocation]);
+
   const filteredShops = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return [...shops]
-      .filter((shop) => {
+    const result = [...shops].filter((shop) => {
         const regionMatch = region ? shop.region === region : true;
         const keywordMatch = normalizedKeyword
           ? [shop.name, shop.region, shop.ramenType]
@@ -47,10 +77,62 @@ export function ShopsPage() {
               .includes(normalizedKeyword)
           : true;
 
-        return regionMatch && keywordMatch;
-      })
-      .sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
-  }, [keyword, region, sortOrder, shops]);
+      return regionMatch && keywordMatch;
+    });
+
+    if (sortMode === 'distance' && userLocation) {
+      return result.sort((a, b) => {
+        const distanceA = shopDistances.get(a.id);
+        const distanceB = shopDistances.get(b.id);
+        if (distanceA == null && distanceB == null) {
+          return 0;
+        }
+        if (distanceA == null) {
+          return 1;
+        }
+        if (distanceB == null) {
+          return -1;
+        }
+        return distanceA - distanceB;
+      });
+    }
+
+    return result.sort((a, b) => (sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating));
+  }, [keyword, region, shopDistances, shops, sortMode, sortOrder, userLocation]);
+
+  const handleGetCurrentLocation = () => {
+    if (!('geolocation' in navigator)) {
+      setLocationStatus('error');
+      setLocationError('このブラウザは現在地取得に対応していません。');
+      return;
+    }
+
+    setLocationStatus('loading');
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationStatus('success');
+      },
+      (error) => {
+        setLocationStatus('error');
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError('現在地の取得が許可されませんでした');
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          setLocationError('現在地の取得がタイムアウトしました。通信状況を確認して再度お試しください。');
+          return;
+        }
+        setLocationError('現在地の取得に失敗しました。しばらくしてから再度お試しください。');
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+  };
 
 
   const mappableShops = useMemo(
@@ -225,6 +307,26 @@ export function ShopsPage() {
             <option value="asc">低い順</option>
           </select>
         </div>
+
+        <div>
+          <label htmlFor="sortMode">並び替え</label>
+          <select
+            id="sortMode"
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as 'rating' | 'distance')}
+          >
+            <option value="rating">評価順</option>
+            <option value="distance">現在地から近い順</option>
+          </select>
+          <button type="button" className="button-secondary location-button" onClick={handleGetCurrentLocation}>
+            現在地を取得
+          </button>
+          {locationStatus === 'loading' ? <p className="location-status">現在地を取得中...</p> : null}
+          {locationStatus === 'error' && locationError ? <p className="status-error">{locationError}</p> : null}
+          {sortMode === 'distance' && !userLocation ? (
+            <p className="location-status">現在地を取得すると近い順で並び替えできます。</p>
+          ) : null}
+        </div>
       </form>
 
       <p className="result-count">{filteredShops.length} 件の店舗が見つかりました。</p>
@@ -281,6 +383,9 @@ export function ShopsPage() {
               <p>
                 <strong>住所:</strong> {shop.address}
               </p>
+              {shopDistances.get(shop.id) != null ? (
+                <p className="shop-distance">現在地から約{shopDistances.get(shop.id)?.toFixed(1)}km</p>
+              ) : null}
               <p>{shop.recommendation}</p>
               <div className="shop-actions">
                 <button
