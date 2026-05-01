@@ -5,7 +5,9 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
+import { fetchSupabaseShops } from '../services/supabaseShopService';
 import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { isRegionOption } from '../constants/shopOptions';
 const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
 const MANUAL_REFERENCE_POINT_KEY = 'ramenmap:manual-reference-point';
@@ -82,6 +84,14 @@ function splitCsvLine(line: string): string[] {
 }
 function normalizeDuplicateKeyValue(value: string): string {
   return value.trim().replace(/[ \u3000]+/g, ' ').toLowerCase();
+}
+function buildDuplicateKey(name: string, address: string): string {
+  return `${normalizeDuplicateKeyValue(name)}::${normalizeDuplicateKeyValue(address)}`;
+}
+
+async function getExistingDuplicateKeys(shopsFromState: { name: string; address: string }[]): Promise<Set<string>> {
+  const sourceShops = isSupabaseConfigured ? await fetchSupabaseShops() : shopsFromState;
+  return new Set(sourceShops.map((shop) => buildDuplicateKey(shop.name, shop.address)));
 }
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
@@ -389,19 +399,18 @@ export function ShopsPage() {
       setCsvPreviewRows([]);
       return;
     }
-    const text = await file.text();
-    const normalizedLines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter((line) => line.trim());
-    if (normalizedLines.length < 2) {
-      setCsvPreviewRows([]);
-      setCsvImportMessage('CSVにデータ行がありません。');
-      return;
-    }
-    const headers = splitCsvLine(normalizedLines[0]);
-    const mappedHeaders = headers.map((header) => csvHeaderMap[header.trim()] ?? null);
-    const existingDuplicateKeys = new Set(
-      shops.map((shop) => `${normalizeDuplicateKeyValue(shop.name)}::${normalizeDuplicateKeyValue(shop.address)}`),
-    );
-    const previewRows: CsvPreviewRow[] = normalizedLines.slice(1).map((line, index) => {
+    try {
+      const text = await file.text();
+      const normalizedLines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter((line) => line.trim());
+      if (normalizedLines.length < 2) {
+        setCsvPreviewRows([]);
+        setCsvImportMessage('CSVにデータ行がありません。');
+        return;
+      }
+      const headers = splitCsvLine(normalizedLines[0]);
+      const mappedHeaders = headers.map((header) => csvHeaderMap[header.trim()] ?? null);
+      const existingDuplicateKeys = await getExistingDuplicateKeys(shops);
+      const previewRows: CsvPreviewRow[] = normalizedLines.slice(1).map((line, index) => {
       const cols = splitCsvLine(line);
       const values = Object.fromEntries(csvFieldKeys.map((key) => [key, ''])) as Record<CsvFieldKey, string>;
       mappedHeaders.forEach((mapped, i) => {
@@ -428,16 +437,16 @@ export function ShopsPage() {
         const longitude = Number(longitudeValue);
         if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) errors.push('経度は-180〜180で入力してください。');
       }
-      const duplicateKey = `${normalizeDuplicateKeyValue(values.name)}::${normalizeDuplicateKeyValue(values.address)}`;
+      const duplicateKey = buildDuplicateKey(values.name, values.address);
       const isDuplicateWithExisting = Boolean(values.name.trim()) && Boolean(values.address.trim()) && existingDuplicateKeys.has(duplicateKey);
       if (isDuplicateWithExisting) {
         warnings.push('既存店舗と重複');
       }
       return { rowNumber: index + 2, values, errors, warnings, isDuplicateWithExisting, isDuplicateInCsv: false };
     });
-    const csvDuplicateBuckets = new Map<string, number[]>();
-    previewRows.forEach((row, idx) => {
-      const key = `${normalizeDuplicateKeyValue(row.values.name)}::${normalizeDuplicateKeyValue(row.values.address)}`;
+      const csvDuplicateBuckets = new Map<string, number[]>();
+      previewRows.forEach((row, idx) => {
+      const key = buildDuplicateKey(row.values.name, row.values.address);
       if (!row.values.name.trim() || !row.values.address.trim()) {
         return;
       }
@@ -445,15 +454,19 @@ export function ShopsPage() {
       indexes.push(idx);
       csvDuplicateBuckets.set(key, indexes);
     });
-    csvDuplicateBuckets.forEach((indexes) => {
+      csvDuplicateBuckets.forEach((indexes) => {
       if (indexes.length < 2) return;
       indexes.forEach((idx) => {
         previewRows[idx].isDuplicateInCsv = true;
         previewRows[idx].warnings.push('CSV内で重複');
       });
     });
-    setCsvPreviewRows(previewRows);
-    setAllowDuplicateImport(false);
+      setCsvPreviewRows(previewRows);
+      setAllowDuplicateImport(false);
+    } catch (error) {
+      setCsvPreviewRows([]);
+      setCsvImportMessage(error instanceof Error ? error.message : 'CSVプレビューの作成に失敗しました。');
+    }
   };
   const csvErrorCount = csvPreviewRows.filter((row) => row.errors.length > 0).length;
   const csvDuplicateSkipCount = allowDuplicateImport
@@ -463,9 +476,18 @@ export function ShopsPage() {
     (row) => row.errors.length === 0 && (allowDuplicateImport || (!row.isDuplicateInCsv && !row.isDuplicateWithExisting)),
   ).length;
   const handleCsvImport = async () => {
+    const existingDuplicateKeys = await getExistingDuplicateKeys(shops);
     const validRows = csvPreviewRows.filter((row) => row.errors.length === 0);
-    const duplicateRows = validRows.filter((row) => row.isDuplicateInCsv || row.isDuplicateWithExisting);
-    const rowsToImport = allowDuplicateImport ? validRows : validRows.filter((row) => !row.isDuplicateInCsv && !row.isDuplicateWithExisting);
+    const duplicateRows = validRows.filter((row) => {
+      const duplicateKey = buildDuplicateKey(row.values.name, row.values.address);
+      return row.isDuplicateInCsv || existingDuplicateKeys.has(duplicateKey);
+    });
+    const rowsToImport = allowDuplicateImport
+      ? validRows
+      : validRows.filter((row) => {
+          const duplicateKey = buildDuplicateKey(row.values.name, row.values.address);
+          return !row.isDuplicateInCsv && !existingDuplicateKeys.has(duplicateKey);
+        });
     if (validRows.length === 0) {
       setCsvImportMessage('登録可能な行がありません。エラーを修正してください。');
       return;
