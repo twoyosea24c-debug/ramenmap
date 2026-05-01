@@ -8,6 +8,7 @@ import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
 
 const KOCHI_CITY_COORDINATES = { lat: 33.5597, lng: 133.5311 };
 const MANUAL_REFERENCE_POINT_KEY = 'ramenmap:manual-reference-point';
+const DISTANCE_SOURCE_MODE_KEY = 'ramenmap:distance-source-mode';
 const DEFAULT_REFERENCE_NAME = '現在地';
 const KOCHI_STATION_REFERENCE = { name: '高知駅', lat: 33.5663, lng: 133.543 };
 type DistanceSourceMode = 'current' | 'manual';
@@ -74,6 +75,17 @@ export function ShopsPage() {
       // ignore parse errors
     }
   }, []);
+
+  useEffect(() => {
+    const savedMode = getLocalStorageItem(DISTANCE_SOURCE_MODE_KEY);
+    if (savedMode === 'current' || savedMode === 'manual') {
+      setDistanceSourceMode(savedMode);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLocalStorageItem(DISTANCE_SOURCE_MODE_KEY, distanceSourceMode);
+  }, [distanceSourceMode]);
 
   const allRegions = useMemo(() => Array.from(new Set(shops.map((shop) => shop.region))).sort(), [shops]);
 
@@ -218,6 +230,16 @@ export function ShopsPage() {
     setManualReferenceError(null);
     setDistanceSourceMode('manual');
     setLocalStorageItem(MANUAL_REFERENCE_POINT_KEY, JSON.stringify(KOCHI_STATION_REFERENCE));
+  };
+
+  const clearManualReferencePoint = () => {
+    setManualReferenceName('');
+    setManualLatitude('');
+    setManualLongitude('');
+    setManualReferenceError(null);
+    setManualReferencePoint(null);
+    setDistanceSourceMode('current');
+    localStorage.removeItem(MANUAL_REFERENCE_POINT_KEY);
   };
 
 
@@ -402,7 +424,7 @@ export function ShopsPage() {
             onChange={(e) => setSortMode(e.target.value as 'rating' | 'distance')}
           >
             <option value="rating">評価順</option>
-            <option value="distance">現在地から近い順</option>
+            <option value="distance">基準地点から近い順</option>
           </select>
           <button type="button" className="button-secondary location-button" onClick={handleGetCurrentLocation}>
             現在地を取得
@@ -453,6 +475,9 @@ export function ShopsPage() {
           </button>
           <button type="button" className="button-secondary location-button" onClick={applyKochiStationReference}>
             高知駅を基準にする
+          </button>
+          <button type="button" className="button-secondary location-button" onClick={clearManualReferencePoint}>
+            手動基準地点をクリア
           </button>
           {locationStatus === 'loading' ? <p className="location-status">現在地を取得中...</p> : null}
           {locationStatus === 'error' && locationError ? <p className="status-error">{locationError}</p> : null}
