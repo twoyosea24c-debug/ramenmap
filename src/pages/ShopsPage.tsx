@@ -38,6 +38,11 @@ type CsvPreviewRow = {
   isDuplicateWithExisting: boolean;
   isDuplicateInCsv: boolean;
 };
+
+type DuplicateSummary = {
+  rowsToImport: CsvPreviewRow[];
+  duplicateRows: CsvPreviewRow[];
+};
 const csvHeaderMap: Record<string, CsvFieldKey> = {
   name: 'name',
   area: 'area',
@@ -473,19 +478,41 @@ export function ShopsPage() {
   const csvPlannedImportCount = csvPreviewRows.filter(
     (row) => row.errors.length === 0 && (allowDuplicateImport || (!row.isDuplicateInCsv && !row.isDuplicateWithExisting)),
   ).length;
-  const handleCsvImport = async () => {
-    const existingDuplicateKeys = await getExistingDuplicateKeys(shops);
+
+  const summarizeImportRows = (existingDuplicateKeys: Set<string>): DuplicateSummary => {
     const validRows = csvPreviewRows.filter((row) => row.errors.length === 0);
-    const duplicateRows = validRows.filter((row) => {
+    const seenCsvKeys = new Set<string>();
+    const rowsToImport: CsvPreviewRow[] = [];
+    const duplicateRows: CsvPreviewRow[] = [];
+
+    validRows.forEach((row) => {
       const duplicateKey = normalizeShopKey(row.values.name, row.values.address);
-      return row.isDuplicateInCsv || existingDuplicateKeys.has(duplicateKey);
+      const hasNameAndAddress = Boolean(row.values.name.trim()) && Boolean(row.values.address.trim());
+      const isDuplicateWithExisting = hasNameAndAddress && existingDuplicateKeys.has(duplicateKey);
+      const isDuplicateInCsv = hasNameAndAddress && seenCsvKeys.has(duplicateKey);
+
+      if (hasNameAndAddress) {
+        seenCsvKeys.add(duplicateKey);
+      }
+
+      const isDuplicate = isDuplicateInCsv || isDuplicateWithExisting;
+      if (!allowDuplicateImport && isDuplicate) {
+        duplicateRows.push(row);
+        return;
+      }
+
+      rowsToImport.push(row);
     });
-    const rowsToImport = allowDuplicateImport
-      ? validRows
-      : validRows.filter((row) => {
-          const duplicateKey = normalizeShopKey(row.values.name, row.values.address);
-          return !row.isDuplicateInCsv && !existingDuplicateKeys.has(duplicateKey);
-        });
+
+    return { rowsToImport, duplicateRows };
+  };
+
+  const handleCsvImport = async () => {
+    const latestShops = await fetchSupabaseShopNameAddresses();
+    const latestDuplicateKeys = new Set(latestShops.map((shop) => normalizeShopKey(shop.name, shop.address)));
+    const validRows = csvPreviewRows.filter((row) => row.errors.length === 0);
+    const { rowsToImport, duplicateRows } = summarizeImportRows(latestDuplicateKeys);
+
     if (validRows.length === 0) {
       setCsvImportMessage('登録可能な行がありません。エラーを修正してください。');
       return;
@@ -496,7 +523,7 @@ export function ShopsPage() {
       return;
     }
     const confirmed = window.confirm(
-      `${rowsToImport.length}件をSupabaseに登録します。よろしいですか？（重複候補: ${duplicateRows.length}件）`,
+      `実際の登録件数: ${rowsToImport.length}件 / 重複スキップ件数: ${duplicateRows.length}件 / エラー件数: ${csvErrorCount}件。Supabaseに登録しますか？`,
     );
     if (!confirmed) {
       return;
