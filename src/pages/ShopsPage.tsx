@@ -5,7 +5,8 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
 import { useAuth } from '../context/AuthContext';
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
-import { fetchSupabaseShops } from '../services/supabaseShopService';
+import { fetchSupabaseShopNameAddresses } from '../services/supabaseShopService';
+import { normalizeShopKey } from '../utils/shopKey';
 import { getLocalStorageItem, setLocalStorageItem } from '../lib/localStorage';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isRegionOption } from '../constants/shopOptions';
@@ -82,17 +83,12 @@ function splitCsvLine(line: string): string[] {
   result.push(current);
   return result.map((value) => value.trim());
 }
-function normalizeDuplicateKeyValue(value: string): string {
-  return value.trim().replace(/[ \u3000]+/g, ' ').toLowerCase();
-}
-function buildDuplicateKey(name: string, address: string): string {
-  return `${normalizeDuplicateKeyValue(name)}::${normalizeDuplicateKeyValue(address)}`;
-}
 
 async function getExistingDuplicateKeys(shopsFromState: { name: string; address: string }[]): Promise<Set<string>> {
-  const sourceShops = isSupabaseConfigured ? await fetchSupabaseShops() : shopsFromState;
-  return new Set(sourceShops.map((shop) => buildDuplicateKey(shop.name, shop.address)));
+  const sourceShops = isSupabaseConfigured ? await fetchSupabaseShopNameAddresses() : shopsFromState;
+  return new Set(sourceShops.map((shop) => normalizeShopKey(shop.name, shop.address)));
 }
+
 export function ShopsPage() {
   const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
@@ -117,6 +113,7 @@ export function ShopsPage() {
   const [csvImportMessage, setCsvImportMessage] = useState<string | null>(null);
   const [isImportingCsv, setIsImportingCsv] = useState(false);
   const [allowDuplicateImport, setAllowDuplicateImport] = useState(false);
+  const [csvSkippedDuplicates, setCsvSkippedDuplicates] = useState<Array<{ name: string; address: string }>>([]);
   useEffect(() => {
     const message = sessionStorage.getItem('ramenmap:save-shop-flash');
     if (!message) {
@@ -395,6 +392,7 @@ export function ShopsPage() {
   const handleCsvFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setCsvImportMessage(null);
+    setCsvSkippedDuplicates([]);
     if (!file) {
       setCsvPreviewRows([]);
       return;
@@ -437,7 +435,7 @@ export function ShopsPage() {
         const longitude = Number(longitudeValue);
         if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) errors.push('経度は-180〜180で入力してください。');
       }
-      const duplicateKey = buildDuplicateKey(values.name, values.address);
+      const duplicateKey = normalizeShopKey(values.name, values.address);
       const isDuplicateWithExisting = Boolean(values.name.trim()) && Boolean(values.address.trim()) && existingDuplicateKeys.has(duplicateKey);
       if (isDuplicateWithExisting) {
         warnings.push('既存店舗と重複');
@@ -446,7 +444,7 @@ export function ShopsPage() {
     });
       const csvDuplicateBuckets = new Map<string, number[]>();
       previewRows.forEach((row, idx) => {
-      const key = buildDuplicateKey(row.values.name, row.values.address);
+      const key = normalizeShopKey(row.values.name, row.values.address);
       if (!row.values.name.trim() || !row.values.address.trim()) {
         return;
       }
@@ -456,9 +454,9 @@ export function ShopsPage() {
     });
       csvDuplicateBuckets.forEach((indexes) => {
       if (indexes.length < 2) return;
-      indexes.forEach((idx) => {
+      indexes.slice(1).forEach((idx) => {
         previewRows[idx].isDuplicateInCsv = true;
-        previewRows[idx].warnings.push('CSV内で重複');
+        previewRows[idx].warnings.push('CSV内で重複（2件目以降）');
       });
     });
       setCsvPreviewRows(previewRows);
@@ -479,13 +477,13 @@ export function ShopsPage() {
     const existingDuplicateKeys = await getExistingDuplicateKeys(shops);
     const validRows = csvPreviewRows.filter((row) => row.errors.length === 0);
     const duplicateRows = validRows.filter((row) => {
-      const duplicateKey = buildDuplicateKey(row.values.name, row.values.address);
+      const duplicateKey = normalizeShopKey(row.values.name, row.values.address);
       return row.isDuplicateInCsv || existingDuplicateKeys.has(duplicateKey);
     });
     const rowsToImport = allowDuplicateImport
       ? validRows
       : validRows.filter((row) => {
-          const duplicateKey = buildDuplicateKey(row.values.name, row.values.address);
+          const duplicateKey = normalizeShopKey(row.values.name, row.values.address);
           return !row.isDuplicateInCsv && !existingDuplicateKeys.has(duplicateKey);
         });
     if (validRows.length === 0) {
@@ -493,7 +491,8 @@ export function ShopsPage() {
       return;
     }
     if (rowsToImport.length === 0) {
-      setCsvImportMessage('重複を除外すると登録可能な行がありません。');
+      setCsvSkippedDuplicates(duplicateRows.map((row) => ({ name: row.values.name.trim(), address: row.values.address.trim() })));
+      setCsvImportMessage('登録対象がありません');
       return;
     }
     const confirmed = window.confirm(
@@ -504,6 +503,7 @@ export function ShopsPage() {
     }
     setIsImportingCsv(true);
     setCsvImportMessage(null);
+    setCsvSkippedDuplicates([]);
     try {
       const inputs = rowsToImport.map((row) => {
         const closedDays = row.values.closed_days
@@ -533,7 +533,9 @@ export function ShopsPage() {
         };
       });
       const result = await importShops(inputs);
-      setCsvImportMessage(`登録件数: ${result.count}件 / 重複スキップ件数: ${allowDuplicateImport ? 0 : duplicateRows.length}件 / エラー件数: ${csvErrorCount}件`);
+      const skippedDuplicates = allowDuplicateImport ? [] : duplicateRows.map((row) => ({ name: row.values.name.trim(), address: row.values.address.trim() }));
+      setCsvSkippedDuplicates(skippedDuplicates);
+      setCsvImportMessage(`登録件数: ${result.count}件 / 重複スキップ件数: ${skippedDuplicates.length}件 / エラー件数: ${csvErrorCount}件`);
       setCsvPreviewRows([]);
       setAllowDuplicateImport(false);
     } catch (error) {
@@ -574,6 +576,16 @@ export function ShopsPage() {
           <h2>CSVインポート（管理者向け）</h2>
           <input type="file" accept=".csv,text/csv" onChange={(event) => void handleCsvFileChange(event)} />
           {csvImportMessage ? <p className={csvImportMessage.includes('失敗') || csvImportMessage.includes('エラー') ? 'status-error' : 'status-ok'}>{csvImportMessage}</p> : null}
+          {csvSkippedDuplicates.length > 0 ? (
+            <div>
+              <p>重複で除外した店舗一覧:</p>
+              <ul>
+                {csvSkippedDuplicates.map((shop, index) => (
+                  <li key={`${shop.name}-${shop.address}-${index}`}>{shop.name || '（店舗名未設定）'} / {shop.address || '（住所未設定）'}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {csvPreviewRows.length > 0 ? (
             <>
               <p>プレビュー（エラーがある行は登録されません）</p>
