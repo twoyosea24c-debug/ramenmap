@@ -39,7 +39,7 @@ export function Layout() {
       <header className="header">
         <div className="header-inner container">
           <Link to="/" className="brand">
-            🍜 Ramen Map
+            🍜 ラーメンマップ
           </Link>
           <nav>
             <ul className="nav-list">
@@ -101,6 +101,26 @@ export function Layout() {
       <main className="container main-content">
         <Outlet />
       </main>
+
+      <footer className="footer">
+        <div className="container footer-inner">
+          <p className="footer-copy">© ラーメンマップ</p>
+          <nav aria-label="フッターナビゲーション">
+            <ul className="footer-links">
+              <li>
+                <NavLink to="/privacy" className="footer-link">
+                  プライバシーポリシー
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/terms" className="footer-link">
+                  利用規約
+                </NavLink>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }
