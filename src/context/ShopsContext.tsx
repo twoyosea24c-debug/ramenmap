@@ -7,7 +7,13 @@ import {
   getShops,
   updateShop as updateShopInStorage,
 } from '../services/shopStorageService';
-import { deleteSupabaseShop, fetchSupabaseShops, insertSupabaseShop, updateSupabaseShop } from '../services/supabaseShopService';
+import {
+  deleteSupabaseShop,
+  fetchSupabaseShops,
+  insertSupabaseShop,
+  insertSupabaseShops,
+  updateSupabaseShop,
+} from '../services/supabaseShopService';
 import type { RamenShop, ShopInput } from '../types';
 
 type AddShopResult = {
@@ -36,6 +42,7 @@ type ShopsContextValue = {
   addShop: (input: ShopInput) => Promise<AddShopResult>;
   updateShop: (id: string, input: ShopInput) => Promise<UpdateShopResult>;
   deleteShop: (id: string) => Promise<DeleteShopResult>;
+  importShops: (inputs: ShopInput[]) => Promise<{ count: number; message: string }>;
 };
 
 const ShopsContext = createContext<ShopsContextValue | undefined>(undefined);
@@ -244,6 +251,19 @@ export function ShopsProvider({ children }: PropsWithChildren) {
             message,
           };
         }
+      },
+      importShops: async (inputs: ShopInput[]) => {
+        if (inputs.length === 0) {
+          return { count: 0, message: '取り込み対象がありません。' };
+        }
+
+        if (!isSupabaseConfigured) {
+          throw new Error('Supabase が未設定のためCSVインポートできません。');
+        }
+
+        await insertSupabaseShops(inputs);
+        await reloadShops();
+        return { count: inputs.length, message: `Supabaseに${inputs.length}件の店舗を登録しました。` };
       },
     }),
     [baseShops, isLoading, loadError, reloadShops, shops],
