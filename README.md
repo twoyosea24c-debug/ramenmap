@@ -85,3 +85,45 @@ supabase secrets set ADMIN_NOTIFICATION_EMAIL=admin@example.com
 # 関数デプロイ
 supabase functions deploy send-reservation-email
 ```
+
+## 予約確認コード機能（メール認証）
+
+`/reservation/check` でメール認証コード（6桁）による予約確認を利用できます。
+
+### 追加SQL
+
+以下のマイグレーションを適用してください。
+
+- `supabase/migrations/20260502130000_add_reservation_verification_codes_and_lookup.sql`
+
+```bash
+supabase db push
+```
+
+### 追加Edge Function
+
+- `supabase/functions/send-reservation-verification-code/index.ts`
+
+#### 必要な環境変数
+
+- `RESEND_API_KEY`（必須）
+- `RESEND_FROM_EMAIL`（任意）
+- `SUPABASE_URL`（必須）
+- `SUPABASE_SERVICE_ROLE_KEY`（必須）
+
+#### ローカル起動
+
+```bash
+supabase functions serve send-reservation-verification-code --env-file supabase/functions/.env
+```
+
+#### デプロイ
+
+```bash
+supabase secrets set RESEND_API_KEY=your-resend-api-key
+supabase secrets set RESEND_FROM_EMAIL="Ramen Map <no-reply@example.com>"
+supabase secrets set SUPABASE_URL=your-project-url
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+supabase functions deploy send-reservation-verification-code
+```
