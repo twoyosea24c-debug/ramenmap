@@ -60,6 +60,59 @@ export const fetchReservationById = async (reservationId: Reservation['id']): Pr
   return mapReservationRow(data as SupabaseReservationRow);
 };
 
+
+export const fetchReservationForCustomer = async (
+  reservationId: Reservation['id'],
+  customerEmail: string,
+): Promise<Reservation | null> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { data, error } = await supabase.rpc('fetch_reservation_for_customer', {
+    reservation_id: reservationId,
+    customer_email_input: customerEmail,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = (data ?? [])[0] as
+    | {
+        id: string;
+        shop_name: string;
+        customer_name: string;
+        reservation_datetime: string;
+        party_size: number;
+        status: ReservationStatus;
+        note: string | null;
+        cancel_reason: string | null;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    shopId: '',
+    shopName: row.shop_name,
+    customerName: row.customer_name,
+    customerPhone: '',
+    customerEmail,
+    reservationDatetime: row.reservation_datetime,
+    partySize: row.party_size,
+    status: row.status,
+    note: row.note,
+    cancelReason: row.cancel_reason,
+    adminMemo: null,
+    createdAt: '',
+    updatedAt: '',
+  };
+};
+
 export const createReservation = async (input: ReservationInsert): Promise<Reservation> => {
   if (!supabase) {
     throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');

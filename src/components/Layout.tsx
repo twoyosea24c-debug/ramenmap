@@ -7,6 +7,7 @@ const navItems = [
   { to: '/shops', label: '店舗一覧' },
   { to: '/regions', label: '地域別' },
   { to: '/favorites', label: 'お気に入り' },
+  { to: '/reservation/check', label: '予約確認' },
 ];
 
 const adminNavItems = [
