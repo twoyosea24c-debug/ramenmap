@@ -185,7 +185,7 @@ export function AdminReservationsPage() {
             <thead>
               <tr>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>ステータス変更</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
@@ -202,10 +202,8 @@ export function AdminReservationsPage() {
                     <td>{formatDateTime(reservation.reservationDatetime)}</td>
                     <td>{reservation.partySize}名</td>
                     <td>
-                      <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>
-                    </td>
-                    <td>
                       <div className="reservation-status-actions">
+                        <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>
                         <select
                           aria-label={`予約ID ${reservation.id} のステータス変更`}
                           value={reservation.status}
