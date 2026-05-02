@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Reservation, ReservationInsert, SupabaseReservationRow } from '../types';
+import type { Reservation, ReservationInsert, ReservationStatus, SupabaseReservationRow } from '../types';
 
 const RESERVATIONS_TABLE = 'reservations';
 
@@ -53,6 +53,28 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
       status: input.status ?? 'pending',
       note: input.note ?? null,
     })
+    .select('*')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
+export const updateReservationStatus = async (
+  reservationId: Reservation['id'],
+  status: ReservationStatus,
+): Promise<Reservation> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update({ status })
+    .eq('id', reservationId)
     .select('*')
     .single();
 

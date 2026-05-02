@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchReservations } from '../services/reservationService';
+import { fetchReservations, updateReservationStatus } from '../services/reservationService';
 import type { Reservation, ReservationStatus } from '../types';
 
 const STATUS_OPTIONS: Array<ReservationStatus | 'all'> = ['all', 'pending', 'confirmed', 'canceled', 'visited'];
+const UPDATE_STATUS_OPTIONS: ReservationStatus[] = ['pending', 'confirmed', 'canceled', 'visited'];
 
 const STATUS_LABEL: Record<ReservationStatus, string> = {
   pending: '未確認',
@@ -42,6 +43,8 @@ export function AdminReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [statusErrorMessage, setStatusErrorMessage] = useState('');
+  const [updatingReservationIds, setUpdatingReservationIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadReservations = async () => {
@@ -91,6 +94,26 @@ export function AdminReservationsPage() {
       canceled: reservations.filter((reservation) => reservation.status === 'canceled').length,
     };
   }, [reservations]);
+
+  const handleStatusChange = async (reservationId: string, nextStatus: ReservationStatus) => {
+    setStatusErrorMessage('');
+    setUpdatingReservationIds((prev) => ({ ...prev, [reservationId]: true }));
+
+    try {
+      const updatedReservation = await updateReservationStatus(reservationId, nextStatus);
+      setReservations((prev) =>
+        prev.map((reservation) => (reservation.id === updatedReservation.id ? updatedReservation : reservation)),
+      );
+    } catch {
+      setStatusErrorMessage('ステータスの更新に失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setUpdatingReservationIds((prev) => {
+        const next = { ...prev };
+        delete next[reservationId];
+        return next;
+      });
+    }
+  };
 
   return (
     <section className="card detail-wrapper">
@@ -147,6 +170,9 @@ export function AdminReservationsPage() {
 
       {isLoading ? <p className="result-count">予約データを読み込み中...</p> : null}
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
+      {!isLoading && !errorMessage && statusErrorMessage ? (
+        <p className="result-count reservation-update-error">{statusErrorMessage}</p>
+      ) : null}
       {!isLoading && !errorMessage ? <p className="result-count">表示件数: {filteredReservations.length}件</p> : null}
 
       {!isLoading && !errorMessage && filteredReservations.length === 0 ? (
@@ -159,26 +185,53 @@ export function AdminReservationsPage() {
             <thead>
               <tr>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>ステータス変更</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
-              {filteredReservations.map((reservation) => (
-                <tr key={reservation.id}>
-                  <td>{reservation.id}</td>
-                  <td>{reservation.shopName}</td>
-                  <td>{reservation.customerName}</td>
-                  <td>{reservation.customerPhone}</td>
-                  <td>{reservation.customerEmail}</td>
-                  <td>{formatDateTime(reservation.reservationDatetime)}</td>
-                  <td>{reservation.partySize}名</td>
-                  <td>
-                    <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>
-                  </td>
-                  <td>{reservation.note?.trim() ? reservation.note : '—'}</td>
-                  <td>{formatDateTime(reservation.createdAt)}</td>
-                </tr>
-              ))}
+              {filteredReservations.map((reservation) => {
+                const isUpdating = updatingReservationIds[reservation.id] ?? false;
+
+                return (
+                  <tr key={reservation.id}>
+                    <td>{reservation.id}</td>
+                    <td>{reservation.shopName}</td>
+                    <td>{reservation.customerName}</td>
+                    <td>{reservation.customerPhone}</td>
+                    <td>{reservation.customerEmail}</td>
+                    <td>{formatDateTime(reservation.reservationDatetime)}</td>
+                    <td>{reservation.partySize}名</td>
+                    <td>
+                      <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>
+                    </td>
+                    <td>
+                      <div className="reservation-status-actions">
+                        <select
+                          aria-label={`予約ID ${reservation.id} のステータス変更`}
+                          value={reservation.status}
+                          disabled={isUpdating}
+                          onChange={(event) => {
+                            const nextStatus = event.target.value as ReservationStatus;
+                            if (nextStatus === reservation.status) {
+                              return;
+                            }
+                            void handleStatusChange(reservation.id, nextStatus);
+                          }}
+                        >
+                          {UPDATE_STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                              {STATUS_LABEL[status]}
+                            </option>
+                          ))}
+                        </select>
+                        {isUpdating ? <p className="reservation-status-updating">更新中...</p> : null}
+                      </div>
+                    </td>
+                    <td>{reservation.note?.trim() ? reservation.note : '—'}</td>
+                    <td>{formatDateTime(reservation.createdAt)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
