@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchReservations, updateReservationStatus } from '../services/reservationService';
+import {
+  cancelReservation,
+  fetchReservations,
+  updateReservationAdminMemo,
+  updateReservationStatus,
+} from '../services/reservationService';
 import type { Reservation, ReservationStatus } from '../types';
 
 const STATUS_OPTIONS: Array<ReservationStatus | 'all'> = ['all', 'pending', 'confirmed', 'canceled', 'visited'];
@@ -37,6 +42,8 @@ const formatDateTime = (value: string) =>
     minute: '2-digit',
   });
 
+const CANCEL_REASON_OPTIONS = ['お客様都合', '店舗都合', '連絡なし', '重複予約', 'その他'] as const;
+
 export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all');
@@ -44,7 +51,11 @@ export function AdminReservationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [statusErrorMessage, setStatusErrorMessage] = useState('');
+  const [memoErrorMessage, setMemoErrorMessage] = useState('');
   const [updatingReservationIds, setUpdatingReservationIds] = useState<Record<string, boolean>>({});
+  const [editingMemoReservationId, setEditingMemoReservationId] = useState<string | null>(null);
+  const [memoDraft, setMemoDraft] = useState('');
+  const [savingMemoReservationIds, setSavingMemoReservationIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadReservations = async () => {
@@ -131,7 +142,57 @@ export function AdminReservationsPage() {
   };
 
   const handleCancelReservation = async (reservation: Reservation) => {
-    await handleStatusChange(reservation, 'canceled');
+    const suggested = `キャンセル理由を入力してください。\n候補: ${CANCEL_REASON_OPTIONS.join(' / ')}`;
+    const input = window.prompt(suggested, reservation.cancelReason ?? '');
+    if (input === null) {
+      return;
+    }
+
+    const cancelReason = input.trim();
+    if (cancelReason.length === 0) {
+      setStatusErrorMessage('キャンセル理由を入力してください。');
+      return;
+    }
+
+    setStatusErrorMessage('');
+    setUpdatingReservationIds((prev) => ({ ...prev, [reservation.id]: true }));
+    try {
+      const updated = await cancelReservation(reservation.id, cancelReason);
+      setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    } catch {
+      setStatusErrorMessage('キャンセル処理に失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setUpdatingReservationIds((prev) => {
+        const next = { ...prev };
+        delete next[reservation.id];
+        return next;
+      });
+    }
+  };
+
+  const handleStartMemoEdit = (reservation: Reservation) => {
+    setEditingMemoReservationId(reservation.id);
+    setMemoErrorMessage('');
+    setMemoDraft(reservation.adminMemo ?? '');
+  };
+
+  const handleSaveMemo = async (reservationId: string) => {
+    setMemoErrorMessage('');
+    setSavingMemoReservationIds((prev) => ({ ...prev, [reservationId]: true }));
+    try {
+      const updated = await updateReservationAdminMemo(reservationId, memoDraft);
+      setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setEditingMemoReservationId(null);
+      setMemoDraft('');
+    } catch {
+      setMemoErrorMessage('管理メモの保存に失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setSavingMemoReservationIds((prev) => {
+        const next = { ...prev };
+        delete next[reservationId];
+        return next;
+      });
+    }
   };
 
   return (
@@ -192,6 +253,7 @@ export function AdminReservationsPage() {
       {!isLoading && !errorMessage && statusErrorMessage ? (
         <p className="result-count reservation-update-error">{statusErrorMessage}</p>
       ) : null}
+      {!isLoading && !errorMessage && memoErrorMessage ? <p className="result-count reservation-update-error">{memoErrorMessage}</p> : null}
       {!isLoading && !errorMessage ? <p className="result-count">表示件数: {filteredReservations.length}件</p> : null}
 
       {!isLoading && !errorMessage && filteredReservations.length === 0 ? (
@@ -204,12 +266,14 @@ export function AdminReservationsPage() {
             <thead>
               <tr>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
               {filteredReservations.map((reservation) => {
                 const isUpdating = updatingReservationIds[reservation.id] ?? false;
+                const isSavingMemo = savingMemoReservationIds[reservation.id] ?? false;
+                const isEditingMemo = editingMemoReservationId === reservation.id;
 
                 return (
                   <tr key={reservation.id}>
@@ -255,6 +319,41 @@ export function AdminReservationsPage() {
                         >
                           キャンセル
                         </button>
+                      )}
+                    </td>
+                    <td>{reservation.status === 'canceled' ? reservation.cancelReason ?? '—' : '—'}</td>
+                    <td>
+                      {isEditingMemo ? (
+                        <div className="reservation-memo-editor">
+                          <textarea
+                            value={memoDraft}
+                            onChange={(event) => setMemoDraft(event.target.value)}
+                            rows={3}
+                          />
+                          <div className="reservation-memo-actions">
+                            <button type="button" className="button-primary" disabled={isSavingMemo} onClick={() => void handleSaveMemo(reservation.id)}>
+                              {isSavingMemo ? '保存中...' : '保存'}
+                            </button>
+                            <button
+                              type="button"
+                              className="button-secondary"
+                              disabled={isSavingMemo}
+                              onClick={() => {
+                                setEditingMemoReservationId(null);
+                                setMemoDraft('');
+                              }}
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="reservation-memo-display">
+                          <p>{reservation.adminMemo?.trim() ? reservation.adminMemo : '—'}</p>
+                          <button type="button" className="button-secondary" onClick={() => handleStartMemoEdit(reservation)}>
+                            メモ編集
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td>{reservation.note?.trim() ? reservation.note : '—'}</td>

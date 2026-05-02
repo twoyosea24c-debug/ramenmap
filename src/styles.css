@@ -1119,6 +1119,28 @@ body {
   font-weight: 700;
 }
 
+.reservation-memo-display p {
+  margin: 0 0 0.45rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 260px;
+}
+
+.reservation-memo-editor textarea {
+  width: 100%;
+  min-width: 220px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.45rem;
+  font: inherit;
+}
+
+.reservation-memo-actions {
+  margin-top: 0.45rem;
+  display: flex;
+  gap: 0.45rem;
+}
+
 @media (max-width: 900px) {
   .reservation-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
