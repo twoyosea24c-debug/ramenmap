@@ -93,6 +93,8 @@ export type Reservation = {
   partySize: number;
   status: ReservationStatus;
   note: string | null;
+  cancelReason: string | null;
+  adminMemo: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -120,6 +122,8 @@ export type SupabaseReservationRow = {
   party_size: number;
   status: ReservationStatus;
   note: string | null;
+  cancel_reason: string | null;
+  admin_memo: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -14,6 +14,8 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   partySize: row.party_size,
   status: row.status,
   note: row.note,
+  cancelReason: row.cancel_reason,
+  adminMemo: row.admin_memo,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -76,6 +78,8 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
     partySize: input.partySize,
     status,
     note,
+    cancelReason: null,
+    adminMemo: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -92,6 +96,50 @@ export const updateReservationStatus = async (
   const { data, error } = await supabase
     .from(RESERVATIONS_TABLE)
     .update({ status })
+    .eq('id', reservationId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
+export const updateReservationAdminMemo = async (
+  reservationId: Reservation['id'],
+  adminMemo: string,
+): Promise<Reservation> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update({ admin_memo: adminMemo })
+    .eq('id', reservationId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
+export const cancelReservation = async (
+  reservationId: Reservation['id'],
+  cancelReason: string,
+): Promise<Reservation> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update({ status: 'canceled', cancel_reason: cancelReason })
     .eq('id', reservationId)
     .select('*')
     .single();
