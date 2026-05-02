@@ -506,6 +506,12 @@ body {
   margin: 0;
 }
 
+.page-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .add-shop-button {
   display: inline-flex;
 }
@@ -609,6 +615,8 @@ body {
   }
 
   .add-shop-button,
+  .page-header-actions .button-primary,
+  .page-header-actions .button-secondary,
   .shop-form-actions .button-primary,
   .shop-form-actions .button-secondary {
     justify-content: center;
