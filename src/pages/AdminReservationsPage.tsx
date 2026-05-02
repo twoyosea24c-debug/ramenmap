@@ -73,7 +73,7 @@ export function AdminReservationsPage() {
         const data = await fetchReservations();
         setReservations(data);
       } catch {
-        setErrorMessage('予約状況を取得できませんでした');
+        setErrorMessage('予約状況を取得できませんでした。Supabase設定を確認してください。');
       } finally {
         setIsLoading(false);
       }
@@ -304,7 +304,7 @@ export function AdminReservationsPage() {
                     <td>{reservation.customerEmail}</td>
                     <td>
                       {formatDateTime(reservation.reservationDatetime)}
-                      {isUrgentPendingReservation(reservation) ? <span className="reservation-urgent-badge">24時間以内・未確認</span> : null}
+                      {isUrgentPendingReservation(reservation) ? <span className="reservation-urgent-badge">24時間以内の予約</span> : null}
                     </td>
                     <td>{reservation.partySize}名</td>
                     <td>
