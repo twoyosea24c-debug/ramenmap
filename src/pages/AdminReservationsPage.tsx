@@ -44,6 +44,27 @@ const formatDateTime = (value: string) =>
   });
 
 const CANCEL_REASON_OPTIONS = ['お客様都合', '店舗都合', '連絡なし', '重複予約', 'その他'] as const;
+const DATE_FILTER_OPTIONS = ['all', 'today', 'tomorrow', 'thisWeek', 'thisMonth', 'custom'] as const;
+const SORT_OPTIONS = ['reservationAsc', 'reservationDesc', 'createdDesc', 'createdAsc', 'pendingFirst'] as const;
+type DateFilter = (typeof DATE_FILTER_OPTIONS)[number];
+type SortOption = (typeof SORT_OPTIONS)[number];
+
+const DATE_FILTER_LABEL: Record<DateFilter, string> = {
+  all: 'すべて',
+  today: '今日',
+  tomorrow: '明日',
+  thisWeek: '今週',
+  thisMonth: '今月',
+  custom: '任意期間',
+};
+
+const SORT_LABEL: Record<SortOption, string> = {
+  reservationAsc: '予約日時が近い順',
+  reservationDesc: '予約日時が遠い順',
+  createdDesc: '申込日時が新しい順',
+  createdAsc: '申込日時が古い順',
+  pendingFirst: '未確認を優先',
+};
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -56,6 +77,10 @@ const isUrgentPendingReservation = (reservation: Reservation) => {
 export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [sortOption, setSortOption] = useState<SortOption>('pendingFirst');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -88,6 +113,20 @@ export function AdminReservationsPage() {
 
   const filteredReservations = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const dayAfterTomorrowStart = new Date(tomorrowStart);
+    dayAfterTomorrowStart.setDate(dayAfterTomorrowStart.getDate() + 1);
+    const weekStart = new Date(todayStart);
+    const day = weekStart.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    weekStart.setDate(weekStart.getDate() + diffToMonday);
+    const nextWeekStart = new Date(weekStart);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     return reservations
       .filter((reservation) => {
@@ -99,20 +138,35 @@ export function AdminReservationsPage() {
           reservation.customerEmail.toLowerCase().includes(normalizedKeyword);
 
         const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
-        return matchesKeyword && matchesStatus;
+        const reservationDate = new Date(reservation.reservationDatetime);
+        const matchesDateFilter =
+          dateFilter === 'all' ||
+          (dateFilter === 'today' && reservationDate >= todayStart && reservationDate < tomorrowStart) ||
+          (dateFilter === 'tomorrow' && reservationDate >= tomorrowStart && reservationDate < dayAfterTomorrowStart) ||
+          (dateFilter === 'thisWeek' && reservationDate >= weekStart && reservationDate < nextWeekStart) ||
+          (dateFilter === 'thisMonth' && reservationDate >= monthStart && reservationDate < nextMonthStart) ||
+          (dateFilter === 'custom' &&
+            (!customStartDate || reservationDate >= new Date(`${customStartDate}T00:00:00`)) &&
+            (!customEndDate || reservationDate < new Date(`${customEndDate}T23:59:59.999`)));
+        return matchesKeyword && matchesStatus && matchesDateFilter;
       })
       .sort((a, b) => {
-        const aUrgent = isUrgentPendingReservation(a);
-        const bUrgent = isUrgentPendingReservation(b);
-        if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
+        const aReservationTime = new Date(a.reservationDatetime).getTime();
+        const bReservationTime = new Date(b.reservationDatetime).getTime();
+        const aCreatedTime = new Date(a.createdAt).getTime();
+        const bCreatedTime = new Date(b.createdAt).getTime();
+
+        if (sortOption === 'reservationAsc') return aReservationTime - bReservationTime;
+        if (sortOption === 'reservationDesc') return bReservationTime - aReservationTime;
+        if (sortOption === 'createdDesc') return bCreatedTime - aCreatedTime;
+        if (sortOption === 'createdAsc') return aCreatedTime - bCreatedTime;
 
         const aPending = a.status === 'pending';
         const bPending = b.status === 'pending';
         if (aPending !== bPending) return aPending ? -1 : 1;
-
-        return new Date(a.reservationDatetime).getTime() - new Date(b.reservationDatetime).getTime();
+        return aReservationTime - bReservationTime;
       });
-  }, [keyword, reservations, statusFilter]);
+  }, [keyword, reservations, statusFilter, dateFilter, customStartDate, customEndDate, sortOption]);
 
   const summary = useMemo(() => {
     const todayDate = new Date().toLocaleDateString('sv-SE');
@@ -391,7 +445,49 @@ export function AdminReservationsPage() {
             ))}
           </select>
         </div>
+        <div>
+          <label htmlFor="reservation-date-filter">予約日で絞り込み</label>
+          <select id="reservation-date-filter" value={dateFilter} onChange={(event) => setDateFilter(event.target.value as DateFilter)}>
+            {DATE_FILTER_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {DATE_FILTER_LABEL[option]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="reservation-sort-option">並び替え</label>
+          <select id="reservation-sort-option" value={sortOption} onChange={(event) => setSortOption(event.target.value as SortOption)}>
+            {SORT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {SORT_LABEL[option]}
+              </option>
+            ))}
+          </select>
+        </div>
       </section>
+      {dateFilter === 'custom' ? (
+        <section className="reservation-filter-grid" aria-label="予約日の任意期間指定">
+          <div>
+            <label htmlFor="reservation-custom-start-date">開始日</label>
+            <input
+              id="reservation-custom-start-date"
+              type="date"
+              value={customStartDate}
+              onChange={(event) => setCustomStartDate(event.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="reservation-custom-end-date">終了日</label>
+            <input
+              id="reservation-custom-end-date"
+              type="date"
+              value={customEndDate}
+              onChange={(event) => setCustomEndDate(event.target.value)}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {isLoading ? <p className="result-count">予約状況を読み込み中...</p> : null}
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
@@ -422,7 +518,7 @@ export function AdminReservationsPage() {
       ) : null}
 
       {!isLoading && !errorMessage && filteredReservations.length === 0 ? (
-        <p className="empty-message">まだ予約はありません。</p>
+        <p className="empty-message">条件に一致する予約はありません。</p>
       ) : null}
 
       {!isLoading && !errorMessage && filteredReservations.length > 0 ? (
