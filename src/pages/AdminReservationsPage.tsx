@@ -95,7 +95,7 @@ export function AdminReservationsPage() {
     };
   }, [reservations]);
 
-  const handleStatusChange = async (reservationId: string, nextStatus: ReservationStatus) => {
+  const commitReservationStatusChange = async (reservationId: string, nextStatus: ReservationStatus) => {
     setStatusErrorMessage('');
     setUpdatingReservationIds((prev) => ({ ...prev, [reservationId]: true }));
 
@@ -115,29 +115,23 @@ export function AdminReservationsPage() {
     }
   };
 
-  const handleCancelReservation = async (reservation: Reservation) => {
-    const confirmed = window.confirm('この予約をキャンセルしますか？');
-    if (!confirmed) {
+  const handleStatusChange = async (reservation: Reservation, nextStatus: ReservationStatus) => {
+    if (nextStatus === reservation.status) {
       return;
     }
 
-    setStatusErrorMessage('');
-    setUpdatingReservationIds((prev) => ({ ...prev, [reservation.id]: true }));
-
-    try {
-      const updatedReservation = await updateReservationStatus(reservation.id, 'canceled');
-      setReservations((prev) =>
-        prev.map((current) => (current.id === updatedReservation.id ? updatedReservation : current)),
-      );
-    } catch {
-      setStatusErrorMessage('予約のキャンセルに失敗しました。Supabase設定を確認してください。');
-    } finally {
-      setUpdatingReservationIds((prev) => {
-        const next = { ...prev };
-        delete next[reservation.id];
-        return next;
-      });
+    if (nextStatus === 'canceled') {
+      const confirmed = window.confirm('この予約をキャンセルしますか？');
+      if (!confirmed) {
+        return;
+      }
     }
+
+    await commitReservationStatusChange(reservation.id, nextStatus);
+  };
+
+  const handleCancelReservation = async (reservation: Reservation) => {
+    await handleStatusChange(reservation, 'canceled');
   };
 
   return (
@@ -235,10 +229,7 @@ export function AdminReservationsPage() {
                           disabled={isUpdating}
                           onChange={(event) => {
                             const nextStatus = event.target.value as ReservationStatus;
-                            if (nextStatus === reservation.status) {
-                              return;
-                            }
-                            void handleStatusChange(reservation.id, nextStatus);
+                            void handleStatusChange(reservation, nextStatus);
                           }}
                         >
                           {UPDATE_STATUS_OPTIONS.map((status) => (
