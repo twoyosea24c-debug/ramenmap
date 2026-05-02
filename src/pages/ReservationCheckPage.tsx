@@ -1,6 +1,10 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Reservation, ReservationStatus } from '../types';
-import { fetchReservationForCustomer } from '../services/reservationService';
+import {
+  fetchReservationsByCustomerEmail,
+  sendReservationVerificationCode,
+  verifyReservationCode,
+} from '../services/reservationService';
 
 const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
   pending: '未確認',
@@ -11,64 +15,81 @@ const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
 
 const formatReservationDatetime = (value: string): string => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date);
 };
 
 export function ReservationCheckPage() {
-  const [reservationId, setReservationId] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [codeSentAt, setCodeSentAt] = useState<number | null>(null);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  useEffect(() => {
+    if (!codeSentAt) return;
+    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [codeSentAt]);
+
+  const resendCooldownSeconds = useMemo(() => {
+    if (!codeSentAt) return 0;
+    const elapsed = Math.floor((nowTick - codeSentAt) / 1000);
+    return Math.max(0, 30 - elapsed);
+  }, [codeSentAt, nowTick]);
+
+  const sendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
-    setReservation(null);
+    setSuccessMessage(null);
+    setReservations([]);
 
-    const trimmedReservationId = reservationId.trim();
-    const trimmedCustomerEmail = customerEmail.trim();
-
-    if (!trimmedReservationId && !trimmedCustomerEmail) {
-      setErrorMessage('予約IDとメールアドレスを入力してください。');
-      return;
-    }
-
-    if (!trimmedReservationId) {
-      setErrorMessage('予約IDを入力してください。');
-      return;
-    }
-
-    if (!trimmedCustomerEmail) {
+    if (!email.trim()) {
       setErrorMessage('メールアドレスを入力してください。');
       return;
     }
 
-    setIsLoading(true);
-
+    setIsSendingCode(true);
     try {
-      const matchedReservation = await fetchReservationForCustomer(trimmedReservationId, trimmedCustomerEmail);
-      if (!matchedReservation) {
-        setErrorMessage('予約が見つかりません。予約IDとメールアドレスをご確認ください。');
-        return;
-      }
+      await sendReservationVerificationCode(email.trim());
+      setCodeSentAt(Date.now());
+      setSuccessMessage('認証コードを送信しました。メールをご確認ください。');
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('認証コード送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
 
-      setReservation(matchedReservation);
+  const verifyCodeAndFetchReservations = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setReservations([]);
+
+    if (!email.trim()) return setErrorMessage('メールアドレスを入力してください。');
+    if (!code.trim()) return setErrorMessage('認証コードを入力してください。');
+
+    setIsVerifying(true);
+    try {
+      const verificationResult = await verifyReservationCode(email.trim(), code.trim());
+      if (verificationResult === 'invalid') return setErrorMessage('認証コードが正しくありません。');
+      if (verificationResult === 'expired') return setErrorMessage('認証コードの有効期限が切れています。再送信してください。');
+
+      const fetchedReservations = await fetchReservationsByCustomerEmail(email.trim(), code.trim());
+      setReservations(fetchedReservations);
+      setSuccessMessage(fetchedReservations.length === 0 ? '該当する予約はありませんでした。' : null);
     } catch (error) {
       console.error(error);
       setErrorMessage('予約情報の確認に失敗しました。時間をおいて再度お試しください。');
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   };
 
@@ -76,42 +97,52 @@ export function ReservationCheckPage() {
     <section className="detail-wrapper reservation-check-wrapper">
       <h1>予約確認</h1>
       <article className="card reservation-check-card">
-        <p className="form-hint">予約完了時に案内された予約IDと、入力したメールアドレスを入力してください。</p>
-        <form className="shop-form" noValidate onSubmit={(event) => void handleSubmit(event)}>
-          <div>
-            <label htmlFor="reservationId">予約ID</label>
-            <input id="reservationId" name="reservationId" value={reservationId} onChange={(event) => setReservationId(event.target.value)} />
-          </div>
+        <p className="form-hint">メールアドレスへ認証コードを送り、予約内容を確認できます。</p>
+
+        <form className="shop-form" noValidate onSubmit={(e) => void sendCode(e)}>
           <div>
             <label htmlFor="customerEmail">メールアドレス</label>
-            <input id="customerEmail" name="customerEmail" type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} />
+            <input id="customerEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="shop-form-actions">
-            <button type="submit" className="button-primary" disabled={isLoading}>
-              予約を確認する
+            <button type="submit" className="button-primary" disabled={isSendingCode || resendCooldownSeconds > 0}>
+              {codeSentAt ? '認証コードを再送信' : '認証コードを送信'}
             </button>
+            {codeSentAt && resendCooldownSeconds > 0 ? <p>再送信まで {resendCooldownSeconds} 秒</p> : null}
           </div>
         </form>
 
-        {isLoading ? <p>予約情報を確認中...</p> : null}
+        {isSendingCode ? <p>認証コードを送信中...</p> : null}
+
+        <form className="shop-form" noValidate onSubmit={(e) => void verifyCodeAndFetchReservations(e)}>
+          <div>
+            <label htmlFor="verificationCode">認証コード</label>
+            <input id="verificationCode" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+          </div>
+          <div className="shop-form-actions">
+            <button type="submit" className="button-primary" disabled={isVerifying}>予約を確認する</button>
+          </div>
+        </form>
+
+        {isVerifying ? <p>予約情報を確認中...</p> : null}
         {errorMessage ? <p className="status-error">{errorMessage}</p> : null}
+        {successMessage ? <p>{successMessage}</p> : null}
       </article>
 
-      {reservation ? (
-        <article className="card reservation-result-card" aria-label="予約確認結果">
-          <h2>予約内容</h2>
+      {reservations.map((reservation) => (
+        <article key={reservation.id} className="card reservation-result-card" aria-label="予約確認結果">
+          <h2>{reservation.shopName}</h2>
           <dl className="detail-list reservation-result-list">
-            <div><dt>予約ID</dt><dd>{reservation.id}</dd></div>
-            <div><dt>店舗名</dt><dd>{reservation.shopName}</dd></div>
             <div><dt>予約者名</dt><dd>{reservation.customerName}</dd></div>
             <div><dt>予約日時</dt><dd>{formatReservationDatetime(reservation.reservationDatetime)}</dd></div>
             <div><dt>人数</dt><dd>{reservation.partySize}名</dd></div>
             <div><dt>ステータス</dt><dd>{RESERVATION_STATUS_LABELS[reservation.status]}</dd></div>
             <div><dt>備考</dt><dd>{reservation.note || '—'}</dd></div>
             <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason || '—'}</dd></div>
+            <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
           </dl>
         </article>
-      ) : null}
+      ))}
     </section>
   );
 }
