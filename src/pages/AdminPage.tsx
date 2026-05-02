@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useShops } from '../context/ShopsContext';
 import { clearAdminOperationLogs, getAdminOperationLogs } from '../services/adminOperationLogService';
+import { fetchReservations } from '../services/reservationService';
 
 type DashboardAction = {
   label: string;
@@ -54,6 +55,27 @@ export function AdminPage() {
   const { shops } = useShops();
   const [historyVersion, setHistoryVersion] = useState(0);
   const operationLogs = useMemo(() => getAdminOperationLogs(), [historyVersion]);
+  const [pendingReservationCount, setPendingReservationCount] = useState(0);
+  const [isReservationsLoading, setIsReservationsLoading] = useState(true);
+  const [reservationsError, setReservationsError] = useState('');
+
+  useEffect(() => {
+    const loadReservationStatus = async () => {
+      setIsReservationsLoading(true);
+      setReservationsError('');
+      try {
+        const data = await fetchReservations();
+        setPendingReservationCount(data.filter((reservation) => reservation.status === 'pending').length);
+      } catch {
+        setReservationsError('予約状況を取得できませんでした');
+      } finally {
+        setIsReservationsLoading(false);
+      }
+    };
+
+    void loadReservationStatus();
+  }, []);
+
 
   const qualityRows = [...shops]
     .map((shop) => {
@@ -118,6 +140,20 @@ export function AdminPage() {
           <dd>{shops.length}件</dd>
         </div>
       </dl>
+
+      <section aria-label="予約通知" className="admin-reservation-notice">
+        {isReservationsLoading ? <p>予約状況を読み込み中...</p> : null}
+        {!isReservationsLoading && reservationsError ? <p className="status-error">{reservationsError}</p> : null}
+        {!isReservationsLoading && !reservationsError ? (
+          <>
+            <p>未確認予約: <strong>{pendingReservationCount}件</strong></p>
+            {pendingReservationCount > 0 ? (
+              <p className="admin-reservation-alert">未確認の予約が{pendingReservationCount}件あります</p>
+            ) : null}
+            <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理画面で確認する</Link>
+          </>
+        ) : null}
+      </section>
 
       <section className="admin-category-grid" aria-label="管理カテゴリ">
         {DASHBOARD_CATEGORIES.map((category) => (

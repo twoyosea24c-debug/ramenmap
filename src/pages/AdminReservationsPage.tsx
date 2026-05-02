@@ -44,6 +44,14 @@ const formatDateTime = (value: string) =>
 
 const CANCEL_REASON_OPTIONS = ['お客様都合', '店舗都合', '連絡なし', '重複予約', 'その他'] as const;
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+const isUrgentPendingReservation = (reservation: Reservation) => {
+  if (reservation.status !== 'pending') return false;
+  const diff = new Date(reservation.reservationDatetime).getTime() - Date.now();
+  return diff >= 0 && diff <= ONE_DAY_MS;
+};
+
 export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all');
@@ -65,7 +73,7 @@ export function AdminReservationsPage() {
         const data = await fetchReservations();
         setReservations(data);
       } catch {
-        setErrorMessage('予約データの取得に失敗しました。Supabase設定を確認してください。');
+        setErrorMessage('予約状況を取得できませんでした');
       } finally {
         setIsLoading(false);
       }
@@ -77,17 +85,29 @@ export function AdminReservationsPage() {
   const filteredReservations = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return reservations.filter((reservation) => {
-      const matchesKeyword =
-        normalizedKeyword.length === 0 ||
-        reservation.shopName.toLowerCase().includes(normalizedKeyword) ||
-        reservation.customerName.toLowerCase().includes(normalizedKeyword) ||
-        reservation.customerPhone.toLowerCase().includes(normalizedKeyword) ||
-        reservation.customerEmail.toLowerCase().includes(normalizedKeyword);
+    return reservations
+      .filter((reservation) => {
+        const matchesKeyword =
+          normalizedKeyword.length === 0 ||
+          reservation.shopName.toLowerCase().includes(normalizedKeyword) ||
+          reservation.customerName.toLowerCase().includes(normalizedKeyword) ||
+          reservation.customerPhone.toLowerCase().includes(normalizedKeyword) ||
+          reservation.customerEmail.toLowerCase().includes(normalizedKeyword);
 
-      const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
-      return matchesKeyword && matchesStatus;
-    });
+        const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
+        return matchesKeyword && matchesStatus;
+      })
+      .sort((a, b) => {
+        const aUrgent = isUrgentPendingReservation(a);
+        const bUrgent = isUrgentPendingReservation(b);
+        if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
+
+        const aPending = a.status === 'pending';
+        const bPending = b.status === 'pending';
+        if (aPending !== bPending) return aPending ? -1 : 1;
+
+        return new Date(a.reservationDatetime).getTime() - new Date(b.reservationDatetime).getTime();
+      });
   }, [keyword, reservations, statusFilter]);
 
   const summary = useMemo(() => {
@@ -248,7 +268,7 @@ export function AdminReservationsPage() {
         </div>
       </section>
 
-      {isLoading ? <p className="result-count">予約データを読み込み中...</p> : null}
+      {isLoading ? <p className="result-count">予約状況を読み込み中...</p> : null}
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
       {!isLoading && !errorMessage && statusErrorMessage ? (
         <p className="result-count reservation-update-error">{statusErrorMessage}</p>
@@ -276,13 +296,16 @@ export function AdminReservationsPage() {
                 const isEditingMemo = editingMemoReservationId === reservation.id;
 
                 return (
-                  <tr key={reservation.id}>
+                  <tr key={reservation.id} className={isUrgentPendingReservation(reservation) ? 'reservation-row-urgent-pending' : reservation.status === 'pending' ? 'reservation-row-pending' : undefined}>
                     <td>{reservation.id}</td>
                     <td>{reservation.shopName}</td>
                     <td>{reservation.customerName}</td>
                     <td>{reservation.customerPhone}</td>
                     <td>{reservation.customerEmail}</td>
-                    <td>{formatDateTime(reservation.reservationDatetime)}</td>
+                    <td>
+                      {formatDateTime(reservation.reservationDatetime)}
+                      {isUrgentPendingReservation(reservation) ? <span className="reservation-urgent-badge">24時間以内・未確認</span> : null}
+                    </td>
                     <td>{reservation.partySize}名</td>
                     <td>
                       <div className="reservation-status-actions">
