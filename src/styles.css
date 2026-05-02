@@ -918,3 +918,64 @@ body {
   color: #b91c1c;
   font-weight: 700;
 }
+
+.checklist-release-guidance {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: #f9fafb;
+}
+
+.checklist-release-guidance h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.checklist-release-guidance p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.checklist-release-guidance.is-ok {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.checklist-release-guidance.is-needs-check {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.checklist-release-guidance.is-pending {
+  border-color: #fda4af;
+  background: #fff1f2;
+}
+
+.checklist-category-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.checklist-item-ok {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.checklist-item-attention {
+  border: 1px solid #fda4af;
+  background: #fff1f2;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.status-needs-check {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.status-pending {
+  color: #b91c1c;
+  font-weight: 700;
+}
