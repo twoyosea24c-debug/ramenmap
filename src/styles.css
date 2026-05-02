@@ -1150,3 +1150,47 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.admin-reservation-notice {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid #fdba74;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.admin-reservation-alert {
+  margin: 0.4rem 0 0.8rem;
+  font-weight: 800;
+  color: #9a3412;
+  font-size: 1.1rem;
+}
+
+.admin-reservation-cta {
+  display: inline-block;
+}
+
+.reservation-row-pending {
+  background: #fffdf5;
+}
+
+.reservation-row-urgent-pending {
+  background: #fff1f2;
+}
+
+.reservation-row-urgent-pending td {
+  border-top: 1px solid #fecdd3;
+  border-bottom: 1px solid #fecdd3;
+}
+
+.reservation-urgent-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #be123c;
+  background: #ffe4e6;
+  border: 1px solid #fda4af;
+  font-weight: 700;
+}
