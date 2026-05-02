@@ -10,6 +10,8 @@ import { appendAdminOperationLog } from '../services/adminOperationLogService';
 import { createReservation } from '../services/reservationService';
 import { isSupabaseConfigured } from '../lib/supabase';
 
+const MAP_LOAD_HELP_MESSAGE = '地図を読み込めませんでした。Google Maps APIキーの設定、HTTPリファラー制限、Maps JavaScript APIの有効化を確認してください。';
+
 type ReservationFormData = {
   customerName: string;
   customerPhone: string;
@@ -42,6 +44,7 @@ export function ShopDetailPage() {
   const [reservationSuccessMessage, setReservationSuccessMessage] = useState<string | null>(null);
   const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
   const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
+  const [isMapLoadFailed, setIsMapLoadFailed] = useState(false);
 
   useEffect(() => {
     const message = sessionStorage.getItem('ramenmap:update-shop-flash');
@@ -208,8 +211,8 @@ export function ShopDetailPage() {
           <h2>地図</h2>
           {!hasCoordinates ? (
             <p className="shop-map-message">位置情報が未設定です</p>
-          ) : !googleMapsEmbedApiKey ? (
-            <p className="shop-map-message">Google Maps Embed APIキーが未設定です</p>
+          ) : !googleMapsEmbedApiKey || isMapLoadFailed ? (
+            <p className="shop-map-message">{MAP_LOAD_HELP_MESSAGE}</p>
           ) : (
             <iframe
               title={`${shop.name} の地図`}
@@ -218,8 +221,15 @@ export function ShopDetailPage() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
+              onError={() => {
+                setIsMapLoadFailed(true);
+                if (import.meta.env.DEV) {
+                  console.error('Google Maps iframe failed to load.');
+                }
+              }}
             />
           )}
+          {hasCoordinates ? <p className="form-hint">住所: {shop.address} / 緯度 {shop.latitude} / 経度 {shop.longitude}</p> : null}
         </section>
       </article>
 
@@ -322,6 +332,7 @@ export function ShopDetailPage() {
               </button>
             </div>
           </form>
+          {hasCoordinates ? <p className="form-hint">住所: {shop.address} / 緯度 {shop.latitude} / 経度 {shop.longitude}</p> : null}
         </section>
       </article>
 

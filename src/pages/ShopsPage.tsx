@@ -17,6 +17,7 @@ const DISTANCE_SOURCE_MODE_KEY = 'ramenmap:distance-source-mode';
 const LAST_CSV_EXPORT_AT_KEY = 'ramenmap:last-csv-export-at';
 const DEFAULT_REFERENCE_NAME = '現在地';
 const KOCHI_STATION_REFERENCE = { name: '高知駅', lat: 33.5663, lng: 133.543 };
+const MAP_LOAD_HELP_MESSAGE = '地図を読み込めませんでした。Google Maps APIキーの設定、HTTPリファラー制限、Maps JavaScript APIの有効化を確認してください。';
 type DistanceSourceMode = 'current' | 'manual';
 type ManualReferencePoint = { name: string; lat: number; lng: number };
 type CsvFieldKey =
@@ -321,6 +322,10 @@ export function ShopsPage() {
     () => filteredShops.filter((shop) => shop.latitude != null && shop.longitude != null),
     [filteredShops],
   );
+  const mappableShopsInfo = useMemo(
+    () => mappableShops.map((shop) => ({ id: shop.id, name: shop.name, address: shop.address, latitude: shop.latitude, longitude: shop.longitude })),
+    [mappableShops],
+  );
   useEffect(() => {
     const apiKey = googleMapsEmbedApiKey;
     const mapElement = mapContainerRef.current;
@@ -328,6 +333,7 @@ export function ShopsPage() {
       return;
     }
     let isActive = true;
+    const mapWindow = window as Window & { gm_authFailure?: (() => void) | undefined };
     const renderMap = () => {
       if (!isActive || !mapContainerRef.current || !window.google?.maps) {
         return;
@@ -368,6 +374,18 @@ export function ShopsPage() {
         map.fitBounds(bounds);
       }
     };
+
+    const handleAuthFailure = () => {
+      if (!isActive) {
+        return;
+      }
+      setMapsLoadError(MAP_LOAD_HELP_MESSAGE);
+      if (import.meta.env.DEV) {
+        console.error('Google Maps authentication failed. Check API key/referrer/API enablement.');
+      }
+    };
+    mapWindow.gm_authFailure = handleAuthFailure;
+
     const scriptId = 'google-maps-javascript-api';
     const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
     if (existingScript) {
@@ -381,7 +399,7 @@ export function ShopsPage() {
         'error',
         () => {
           if (isActive) {
-            setMapsLoadError('Google Maps JavaScript APIの読み込みに失敗しました。時間をおいて再度お試しください。');
+            setMapsLoadError(MAP_LOAD_HELP_MESSAGE);
           }
         },
         { once: true },
@@ -399,12 +417,15 @@ export function ShopsPage() {
     });
     script.addEventListener('error', () => {
       if (isActive) {
-        setMapsLoadError('Google Maps JavaScript APIの読み込みに失敗しました。時間をおいて再度お試しください。');
+        setMapsLoadError(MAP_LOAD_HELP_MESSAGE);
       }
     });
     document.head.appendChild(script);
     return () => {
       isActive = false;
+      if (mapWindow.gm_authFailure === handleAuthFailure) {
+        mapWindow.gm_authFailure = undefined;
+      }
     };
   }, [mappableShops]);
   const handleCsvFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -829,14 +850,27 @@ export function ShopsPage() {
       <section id="shops-map" className="card shop-map-section" aria-label="地図で見る">
         <h2>地図で見る</h2>
         {!googleMapsEmbedApiKey ? (
-          <p className="shop-map-message">Google Maps APIキーが未設定です</p>
+          <p className="shop-map-message">{MAP_LOAD_HELP_MESSAGE}</p>
         ) : mapsLoadError ? (
-          <p className="status-error">{mapsLoadError}</p>
+          <>
+            <p className={isAdmin ? 'status-error' : 'shop-map-message'}>{MAP_LOAD_HELP_MESSAGE}</p>
+            {import.meta.env.DEV ? <p className="form-hint">詳細はブラウザのコンソールをご確認ください。</p> : null}
+          </>
         ) : mappableShops.length === 0 ? (
           <p className="shop-map-message">地図表示できる店舗がありません（位置情報未設定）。</p>
         ) : (
           <div ref={mapContainerRef} className="shops-map-canvas" />
         )}
+        {(mapsLoadError || !googleMapsEmbedApiKey) && mappableShopsInfo.length > 0 ? (
+          <div className="shop-map-message">
+            <p>地図が表示できないため、店舗の位置情報を表示します。</p>
+            <ul>
+              {mappableShopsInfo.slice(0, 10).map((shop) => (
+                <li key={shop.id}>{shop.name} / {shop.address} / 緯度 {shop.latitude} / 経度 {shop.longitude}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
       <div className="shop-list">
         {filteredShops.map((shop) => {
