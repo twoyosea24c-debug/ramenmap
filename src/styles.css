@@ -865,3 +865,56 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.checklist-progress {
+  border: 1px solid #fecaca;
+  background: linear-gradient(120deg, #fff1f2, #fff7ed);
+  border-radius: 10px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.checklist-progress strong {
+  color: #b91c1c;
+}
+
+.checklist-progress small {
+  color: #4b5563;
+}
+
+.checklist-items {
+  list-style: none;
+  padding-left: 0;
+}
+
+.checklist-description,
+.checklist-detail {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.checklist-description {
+  color: #4b5563;
+}
+
+.checklist-detail {
+  color: #1f2937;
+}
+
+.checklist-item-attention {
+  border: 1px solid #fda4af;
+  background: #fff1f2;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.status-needs-check {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.status-pending {
+  color: #b91c1c;
+  font-weight: 700;
+}
