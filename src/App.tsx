@@ -16,6 +16,7 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminChecklistPage } from './pages/AdminChecklistPage';
 import { AdminReservationsPage } from './pages/AdminReservationsPage';
+import { AdminReservationDetailPage } from './pages/AdminReservationDetailPage';
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
           element={
             <RequireAdmin>
               <AdminReservationsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="admin/reservations/:id"
+          element={
+            <RequireAdmin>
+              <AdminReservationDetailPage />
             </RequireAdmin>
           }
         />

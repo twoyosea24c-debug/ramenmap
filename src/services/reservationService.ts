@@ -37,6 +37,29 @@ export const fetchReservations = async (): Promise<Reservation[]> => {
   return (data ?? []).map((row) => mapReservationRow(row as SupabaseReservationRow));
 };
 
+
+export const fetchReservationById = async (reservationId: Reservation['id']): Promise<Reservation | null> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .select('*')
+    .eq('id', reservationId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
 export const createReservation = async (input: ReservationInsert): Promise<Reservation> => {
   if (!supabase) {
     throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
