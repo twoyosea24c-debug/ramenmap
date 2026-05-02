@@ -44,6 +44,7 @@ export function ShopDetailPage() {
   const [reservationSuccessMessage, setReservationSuccessMessage] = useState<string | null>(null);
   const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
   const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
+  const [isReservationCompleted, setIsReservationCompleted] = useState(false);
   const [isMapLoadFailed, setIsMapLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -100,12 +101,17 @@ export function ShopDetailPage() {
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleReservationChange = (key: keyof ReservationFormData, value: string) => {
+    if (reservationSuccessMessage) {
+      setReservationSuccessMessage(null);
+    }
+    if (isReservationCompleted) {
+      setIsReservationCompleted(false);
+    }
     setReservationForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleReservationSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setReservationSuccessMessage(null);
     setReservationErrorMessage(null);
     setIsSubmittingReservation(true);
 
@@ -151,7 +157,8 @@ export function ShopDetailPage() {
         status: 'pending',
       });
 
-      setReservationSuccessMessage('予約を受け付けました。店舗からの確認連絡をお待ちください。');
+      setReservationSuccessMessage('予約が完了しました。店舗からの確認連絡をお待ちください。');
+      setIsReservationCompleted(true);
       setReservationForm(initialReservationFormData);
     } catch (error) {
       console.error(error);
@@ -320,8 +327,9 @@ export function ShopDetailPage() {
             </div>
             <div className="shop-form-actions">
               <button type="submit" className="button-primary" disabled={isSubmittingReservation}>
-                {isSubmittingReservation ? '送信中...' : '予約を送信'}
+                {isSubmittingReservation ? '送信中...' : isReservationCompleted ? '予約完了' : '予約を送信'}
               </button>
+              {isReservationCompleted ? <p className="status-ok">予約完了しました</p> : null}
             </div>
           </form>
           {hasCoordinates ? <p className="form-hint">住所: {shop.address} / 緯度 {shop.latitude} / 経度 {shop.longitude}</p> : null}
