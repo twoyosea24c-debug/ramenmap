@@ -1081,6 +1081,29 @@ body {
   border-color: #6ee7b7;
 }
 
+.reservation-status-actions {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.reservation-status-actions select:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.reservation-status-updating {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.reservation-update-error {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .reservation-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
