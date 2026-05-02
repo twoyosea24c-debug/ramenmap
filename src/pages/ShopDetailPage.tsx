@@ -1,5 +1,5 @@
 import { formatStructuredHours, getShopBusinessStatus } from '../utils/businessHours';
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useShops } from '../context/ShopsContext';
@@ -7,6 +7,28 @@ import { useAuth } from '../context/AuthContext';
 
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
 import { appendAdminOperationLog } from '../services/adminOperationLogService';
+import { createReservation } from '../services/reservationService';
+import { isSupabaseConfigured } from '../lib/supabase';
+
+type ReservationFormData = {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  reservationDate: string;
+  reservationTime: string;
+  partySize: string;
+  note: string;
+};
+
+const initialReservationFormData: ReservationFormData = {
+  customerName: '',
+  customerPhone: '',
+  customerEmail: '',
+  reservationDate: '',
+  reservationTime: '',
+  partySize: '1',
+  note: '',
+};
 
 export function ShopDetailPage() {
   const { id } = useParams();
@@ -16,6 +38,10 @@ export function ShopDetailPage() {
   const { isFavorite, toggleFavorite, removeFavorite } = useFavorites();
   const { isAdmin } = useAuth();
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const [reservationForm, setReservationForm] = useState<ReservationFormData>(initialReservationFormData);
+  const [reservationSuccessMessage, setReservationSuccessMessage] = useState<string | null>(null);
+  const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
+  const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
 
   useEffect(() => {
     const message = sessionStorage.getItem('ramenmap:update-shop-flash');
@@ -66,6 +92,70 @@ export function ShopDetailPage() {
     appendAdminOperationLog({ operationType: '店舗削除', target: shop.name, result: '成功', message: result.message });
     removeFavorite(shop.id);
     navigate('/shops');
+  };
+
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const handleReservationChange = (key: keyof ReservationFormData, value: string) => {
+    setReservationForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleReservationSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setReservationSuccessMessage(null);
+    setReservationErrorMessage(null);
+
+    const customerName = reservationForm.customerName.trim();
+    const customerPhone = reservationForm.customerPhone.trim();
+    const customerEmail = reservationForm.customerEmail.trim();
+    const reservationDate = reservationForm.reservationDate;
+    const reservationTime = reservationForm.reservationTime;
+    const partySize = Number(reservationForm.partySize);
+
+    if (!customerName || !customerPhone || !customerEmail || !reservationDate || !reservationTime || !reservationForm.partySize) {
+      setReservationErrorMessage('必須項目を入力してください。');
+      return;
+    }
+
+    if (!isValidEmail(customerEmail)) {
+      setReservationErrorMessage('メールアドレスの形式が正しくありません。');
+      return;
+    }
+
+    if (!Number.isInteger(partySize) || partySize < 1) {
+      setReservationErrorMessage('人数は1人以上で入力してください。');
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      setReservationErrorMessage('現在予約機能を利用できません。管理者へお問い合わせください。');
+      return;
+    }
+
+    const reservationDatetime = new Date(`${reservationDate}T${reservationTime}`).toISOString();
+
+    setIsSubmittingReservation(true);
+    try {
+      await createReservation({
+        shopId: shop.id,
+        shopName: shop.name,
+        customerName,
+        customerPhone,
+        customerEmail,
+        reservationDatetime,
+        partySize,
+        note: reservationForm.note.trim() || null,
+        status: 'pending',
+      });
+
+      setReservationSuccessMessage('予約を受け付けました。店舗からの確認連絡をお待ちください。');
+      setReservationForm(initialReservationFormData);
+    } catch (error) {
+      console.error(error);
+      setReservationErrorMessage('予約の登録に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsSubmittingReservation(false);
+    }
   };
 
   return (
@@ -130,6 +220,108 @@ export function ShopDetailPage() {
               allowFullScreen
             />
           )}
+        </section>
+      </article>
+
+      <article className="card detail-card">
+        <section className="shop-reservation-section" aria-label="予約フォーム">
+          <h2>予約フォーム</h2>
+          {reservationSuccessMessage ? <p className="status-ok">{reservationSuccessMessage}</p> : null}
+          {reservationErrorMessage ? <p className="status-error">{reservationErrorMessage}</p> : null}
+          <form className="shop-form" onSubmit={(event) => void handleReservationSubmit(event)}>
+            <div>
+              <label htmlFor="customerName">
+                予約者名<span className="required">*</span>
+              </label>
+              <input
+                id="customerName"
+                name="customerName"
+                value={reservationForm.customerName}
+                onChange={(event) => handleReservationChange('customerName', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="customerPhone">
+                電話番号<span className="required">*</span>
+              </label>
+              <input
+                id="customerPhone"
+                name="customerPhone"
+                value={reservationForm.customerPhone}
+                onChange={(event) => handleReservationChange('customerPhone', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="customerEmail">
+                メールアドレス<span className="required">*</span>
+              </label>
+              <input
+                id="customerEmail"
+                type="email"
+                name="customerEmail"
+                value={reservationForm.customerEmail}
+                onChange={(event) => handleReservationChange('customerEmail', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="reservationDate">
+                予約日<span className="required">*</span>
+              </label>
+              <input
+                id="reservationDate"
+                type="date"
+                name="reservationDate"
+                value={reservationForm.reservationDate}
+                onChange={(event) => handleReservationChange('reservationDate', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="reservationTime">
+                予約時間<span className="required">*</span>
+              </label>
+              <input
+                id="reservationTime"
+                type="time"
+                name="reservationTime"
+                value={reservationForm.reservationTime}
+                onChange={(event) => handleReservationChange('reservationTime', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="partySize">
+                人数<span className="required">*</span>
+              </label>
+              <input
+                id="partySize"
+                type="number"
+                name="partySize"
+                min={1}
+                value={reservationForm.partySize}
+                onChange={(event) => handleReservationChange('partySize', event.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="note">備考</label>
+              <textarea
+                id="note"
+                name="note"
+                rows={4}
+                value={reservationForm.note}
+                onChange={(event) => handleReservationChange('note', event.target.value)}
+              />
+            </div>
+            <div className="shop-form-actions">
+              <button type="submit" className="button-primary" disabled={isSubmittingReservation}>
+                {isSubmittingReservation ? '送信中...' : '予約を送信'}
+              </button>
+            </div>
+          </form>
         </section>
       </article>
 
