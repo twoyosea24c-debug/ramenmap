@@ -17,6 +17,7 @@ import { TermsPage } from './pages/TermsPage';
 import { AdminChecklistPage } from './pages/AdminChecklistPage';
 import { AdminReservationsPage } from './pages/AdminReservationsPage';
 import { AdminReservationDetailPage } from './pages/AdminReservationDetailPage';
+import { ReservationCheckPage } from './pages/ReservationCheckPage';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="terms" element={<TermsPage />} />
+        <Route path="reservation/check" element={<ReservationCheckPage />} />
         <Route
           path="settings/supabase"
           element={
