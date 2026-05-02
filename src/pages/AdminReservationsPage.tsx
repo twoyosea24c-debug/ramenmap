@@ -133,6 +133,13 @@ export function AdminReservationsPage() {
   const allVisibleSelected =
     filteredReservations.length > 0 && filteredReservations.every((reservation) => selectedReservationIds.includes(reservation.id));
 
+
+  useEffect(() => {
+    const visibleReservationIds = new Set(filteredReservations.map((reservation) => reservation.id));
+    setSelectedReservationIds((prev) => prev.filter((id) => visibleReservationIds.has(id)));
+  }, [filteredReservations]);
+
+
   const commitReservationStatusChange = async (reservationId: string, nextStatus: ReservationStatus) => {
     setStatusErrorMessage('');
     setUpdatingReservationIds((prev) => ({ ...prev, [reservationId]: true }));
