@@ -107,6 +107,37 @@ export const updateReservationStatus = async (
   return mapReservationRow(data as SupabaseReservationRow);
 };
 
+export const bulkUpdateReservationStatus = async (
+  reservationIds: Reservation['id'][],
+  status: ReservationStatus,
+  cancelReason?: string,
+): Promise<Reservation[]> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  if (reservationIds.length === 0) {
+    return [];
+  }
+
+  const payload: { status: ReservationStatus; cancel_reason?: string } = { status };
+  if (status === 'canceled') {
+    payload.cancel_reason = cancelReason ?? '';
+  }
+
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update(payload)
+    .in('id', reservationIds)
+    .select('*');
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapReservationRow(row as SupabaseReservationRow));
+};
+
 export const updateReservationAdminMemo = async (
   reservationId: Reservation['id'],
   adminMemo: string,
