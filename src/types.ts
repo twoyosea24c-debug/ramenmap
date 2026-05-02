@@ -79,3 +79,47 @@ export type SupabaseFavoriteRow = {
   id: string;
   shopId: RamenShop['id'];
 };
+
+export type ReservationStatus = 'pending' | 'confirmed' | 'canceled' | 'visited';
+
+export type Reservation = {
+  id: string;
+  shopId: string;
+  shopName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  reservationDatetime: string;
+  partySize: number;
+  status: ReservationStatus;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReservationInsert = {
+  shopId: string;
+  shopName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  reservationDatetime: string;
+  partySize: number;
+  status?: ReservationStatus;
+  note?: string | null;
+};
+
+export type SupabaseReservationRow = {
+  id: string;
+  shop_id: string;
+  shop_name: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  reservation_datetime: string;
+  party_size: number;
+  status: ReservationStatus;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
