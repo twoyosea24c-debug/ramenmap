@@ -40,27 +40,45 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
     throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   }
 
-  const { data, error } = await supabase
-    .from(RESERVATIONS_TABLE)
-    .insert({
-      shop_id: input.shopId,
-      shop_name: input.shopName,
-      customer_name: input.customerName,
-      customer_phone: input.customerPhone,
-      customer_email: input.customerEmail,
-      reservation_datetime: input.reservationDatetime,
-      party_size: input.partySize,
-      status: input.status ?? 'pending',
-      note: input.note ?? null,
-    })
-    .select('*')
-    .single();
+  const status = input.status ?? 'pending';
+  const note = input.note ?? null;
+  const insertPayload = {
+    shop_id: input.shopId,
+    shop_name: input.shopName,
+    customer_name: input.customerName,
+    customer_phone: input.customerPhone,
+    customer_email: input.customerEmail,
+    reservation_datetime: input.reservationDatetime,
+    party_size: input.partySize,
+    status,
+    note,
+  };
+
+  // 一般ユーザーの予約登録では anon に INSERT だけを許可すればよいように、
+  // insert 後に select('*') で予約行を読み返さない。
+  // select を付けると RLS で anon の SELECT 権限が必要になり、予約登録が 401/失敗になる。
+  const { error } = await supabase.from(RESERVATIONS_TABLE).insert(insertPayload);
 
   if (error) {
     throw error;
   }
 
-  return mapReservationRow(data as SupabaseReservationRow);
+  const now = new Date().toISOString();
+
+  return {
+    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}`,
+    shopId: input.shopId,
+    shopName: input.shopName,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+    reservationDatetime: input.reservationDatetime,
+    partySize: input.partySize,
+    status,
+    note,
+    createdAt: now,
+    updatedAt: now,
+  };
 };
 
 export const updateReservationStatus = async (
