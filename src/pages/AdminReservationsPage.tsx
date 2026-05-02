@@ -288,11 +288,63 @@ export function AdminReservationsPage() {
     }
   };
 
+  const handleExportCsv = () => {
+    if (filteredReservations.length === 0) return;
+    const headers = [
+      '予約ID',
+      '店舗名',
+      '予約者名',
+      '電話番号',
+      'メールアドレス',
+      '予約日時',
+      '人数',
+      'ステータス',
+      'キャンセル理由',
+      '管理メモ',
+      '備考',
+      '申込日時',
+    ];
+    const escapeCsvField = (value: string | number) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = filteredReservations.map((reservation) => [
+      reservation.id,
+      reservation.shopName,
+      reservation.customerName,
+      reservation.customerPhone,
+      reservation.customerEmail,
+      reservation.reservationDatetime,
+      reservation.partySize,
+      STATUS_LABEL[reservation.status],
+      reservation.cancelReason ?? '',
+      reservation.adminMemo ?? '',
+      reservation.note ?? '',
+      reservation.createdAt,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((field) => escapeCsvField(field)).join(','))
+      .join('\r\n');
+
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const now = new Date();
+    anchor.href = url;
+    anchor.download = `ramenmap-reservations-${now.toISOString().slice(0, 10)}.csv`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section className="card detail-wrapper">
       <div className="page-header">
         <h1>予約管理</h1>
-        <Link to="/admin" className="button-secondary">管理者ダッシュボードへ戻る</Link>
+        <div className="page-header-actions">
+          <button type="button" className="button-primary" disabled={filteredReservations.length === 0} onClick={handleExportCsv}>
+            CSV出力
+          </button>
+          <Link to="/admin" className="button-secondary">管理者ダッシュボードへ戻る</Link>
+        </div>
       </div>
 
       <section className="reservation-summary-grid" aria-label="予約件数サマリー">
