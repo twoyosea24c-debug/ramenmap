@@ -15,6 +15,7 @@ import { AdminPage } from './pages/AdminPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminChecklistPage } from './pages/AdminChecklistPage';
+import { AdminReservationsPage } from './pages/AdminReservationsPage';
 
 function App() {
   return (
@@ -43,6 +44,14 @@ function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route
+          path="admin/reservations"
+          element={
+            <RequireAdmin>
+              <AdminReservationsPage />
+            </RequireAdmin>
+          }
+        />
         <Route
           path="admin/checklist"
           element={
