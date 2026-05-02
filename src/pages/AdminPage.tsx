@@ -40,6 +40,7 @@ const DASHBOARD_CATEGORIES: DashboardCategory[] = [
     title: '運用管理',
     description: '操作履歴やSupabase接続状態の確認を行います。',
     actions: [
+      { label: '公開前チェック', to: '/admin/checklist', className: 'button-primary' },
       { label: '操作履歴', to: '/admin#operation-history', className: 'button-secondary' },
       { label: 'Supabase設定確認', to: '/settings/supabase', className: 'button-secondary' },
       { label: 'Supabase店舗確認', to: '/settings/supabase-shops', className: 'button-secondary' },

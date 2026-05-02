@@ -14,6 +14,7 @@ import { RequireAdmin } from './components/RequireAdmin';
 import { AdminPage } from './pages/AdminPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { AdminChecklistPage } from './pages/AdminChecklistPage';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route
+          path="admin/checklist"
+          element={
+            <RequireAdmin>
+              <AdminChecklistPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route
