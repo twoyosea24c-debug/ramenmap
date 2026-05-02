@@ -115,6 +115,31 @@ export function AdminReservationsPage() {
     }
   };
 
+  const handleCancelReservation = async (reservation: Reservation) => {
+    const confirmed = window.confirm('この予約をキャンセルしますか？');
+    if (!confirmed) {
+      return;
+    }
+
+    setStatusErrorMessage('');
+    setUpdatingReservationIds((prev) => ({ ...prev, [reservation.id]: true }));
+
+    try {
+      const updatedReservation = await updateReservationStatus(reservation.id, 'canceled');
+      setReservations((prev) =>
+        prev.map((current) => (current.id === updatedReservation.id ? updatedReservation : current)),
+      );
+    } catch {
+      setStatusErrorMessage('予約のキャンセルに失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setUpdatingReservationIds((prev) => {
+        const next = { ...prev };
+        delete next[reservation.id];
+        return next;
+      });
+    }
+  };
+
   return (
     <section className="card detail-wrapper">
       <div className="page-header">
@@ -185,7 +210,7 @@ export function AdminReservationsPage() {
             <thead>
               <tr>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
@@ -224,6 +249,22 @@ export function AdminReservationsPage() {
                         </select>
                         {isUpdating ? <p className="reservation-status-updating">更新中...</p> : null}
                       </div>
+                    </td>
+                    <td>
+                      {reservation.status === 'canceled' ? (
+                        <span className="reservation-action-muted">キャンセル済み</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="button-danger reservation-cancel-button"
+                          disabled={isUpdating}
+                          onClick={() => {
+                            void handleCancelReservation(reservation);
+                          }}
+                        >
+                          キャンセル
+                        </button>
+                      )}
                     </td>
                     <td>{reservation.note?.trim() ? reservation.note : '—'}</td>
                     <td>{formatDateTime(reservation.createdAt)}</td>

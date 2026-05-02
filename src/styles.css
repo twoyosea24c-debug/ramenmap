@@ -1099,6 +1099,21 @@ body {
   font-weight: 600;
 }
 
+.reservation-cancel-button {
+  white-space: nowrap;
+}
+
+.reservation-cancel-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reservation-action-muted {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .reservation-update-error {
   color: #b91c1c;
   font-weight: 700;
