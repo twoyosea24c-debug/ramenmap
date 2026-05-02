@@ -1231,3 +1231,73 @@ body {
   border: 1px solid #fda4af;
   font-weight: 700;
 }
+
+.reservation-row-actions {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+}
+
+.reservation-detail-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.reservation-detail-card h2 {
+  margin-top: 0;
+}
+
+.reservation-detail-list {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.reservation-detail-list div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.reservation-detail-list dt {
+  font-weight: 700;
+  color: #374151;
+}
+
+.reservation-detail-list dd {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reservation-detail-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.reservation-detail-actions label {
+  font-weight: 700;
+}
+
+.reservation-detail-actions select,
+.reservation-detail-actions textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.45rem;
+  font: inherit;
+}
+
+@media (max-width: 900px) {
+  .reservation-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-detail-list div {
+    grid-template-columns: 1fr;
+  }
+}

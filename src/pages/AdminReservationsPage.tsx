@@ -588,20 +588,23 @@ export function AdminReservationsPage() {
                       </div>
                     </td>
                     <td>
-                      {reservation.status === 'canceled' ? (
-                        <span className="reservation-action-muted">キャンセル済み</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="button-danger reservation-cancel-button"
-                          disabled={isUpdating || isBulkUpdating}
-                          onClick={() => {
-                            void handleCancelReservation(reservation);
-                          }}
-                        >
-                          キャンセル
-                        </button>
-                      )}
+                      <div className="reservation-row-actions">
+                        <Link to={`/admin/reservations/${reservation.id}`} className="button-secondary">詳細</Link>
+                        {reservation.status === 'canceled' ? (
+                          <span className="reservation-action-muted">キャンセル済み</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="button-danger reservation-cancel-button"
+                            disabled={isUpdating || isBulkUpdating}
+                            onClick={() => {
+                              void handleCancelReservation(reservation);
+                            }}
+                          >
+                            キャンセル
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td>{reservation.status === 'canceled' ? reservation.cancelReason ?? '—' : '—'}</td>
                     <td>
