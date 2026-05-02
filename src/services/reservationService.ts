@@ -20,6 +20,32 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   updatedAt: row.updated_at,
 });
 
+
+
+type ReservationEmailPayload = {
+  reservationId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  shopName: string;
+  reservationDatetime: string;
+  partySize: number;
+  note?: string | null;
+};
+
+export const sendReservationConfirmationEmail = async (payload: ReservationEmailPayload): Promise<void> => {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { error } = await supabase.functions.invoke('send-reservation-email', {
+    body: payload,
+  });
+
+  if (error) {
+    throw error;
+  }
+};
 export const fetchReservations = async (): Promise<Reservation[]> => {
   if (!supabase) {
     throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
