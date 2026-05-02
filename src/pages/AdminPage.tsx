@@ -67,7 +67,7 @@ export function AdminPage() {
         const data = await fetchReservations();
         setPendingReservationCount(data.filter((reservation) => reservation.status === 'pending').length);
       } catch {
-        setReservationsError('予約状況を取得できませんでした');
+        setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
       } finally {
         setIsReservationsLoading(false);
       }
@@ -146,11 +146,14 @@ export function AdminPage() {
         {!isReservationsLoading && reservationsError ? <p className="status-error">{reservationsError}</p> : null}
         {!isReservationsLoading && !reservationsError ? (
           <>
-            <p>未確認予約: <strong>{pendingReservationCount}件</strong></p>
+            <p>未確認の予約：<strong>{pendingReservationCount}件</strong></p>
             {pendingReservationCount > 0 ? (
-              <p className="admin-reservation-alert">未確認の予約が{pendingReservationCount}件あります</p>
+              <div className="admin-reservation-alert-card">
+                <p className="admin-reservation-alert">新しい予約があります。確認してください。</p>
+                <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+              </div>
             ) : null}
-            <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理画面で確認する</Link>
+            
           </>
         ) : null}
       </section>

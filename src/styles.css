@@ -1159,6 +1159,15 @@ body {
   background: #fffaf0;
 }
 
+
+.admin-reservation-alert-card {
+  margin-top: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+}
+
 .admin-reservation-alert {
   margin: 0.4rem 0 0.8rem;
   font-weight: 800;
