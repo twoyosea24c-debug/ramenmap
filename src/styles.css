@@ -979,3 +979,114 @@ body {
   color: #b91c1c;
   font-weight: 700;
 }
+
+.reservation-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.reservation-summary-card {
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+
+.reservation-summary-card h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.reservation-summary-card p {
+  margin: 0.4rem 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.reservation-summary-alert {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.reservation-summary-alert p {
+  color: #9a3412;
+}
+
+.reservation-summary-cancelled {
+  border-color: #fca5a5;
+  background: #fff1f2;
+}
+
+.reservation-summary-cancelled p {
+  color: #9f1239;
+}
+
+.reservation-filter-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.8rem;
+}
+
+.reservation-filter-grid label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.reservation-filter-grid input,
+.reservation-filter-grid select {
+  width: 100%;
+  padding: 0.45rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.reservation-table-wrapper {
+  overflow-x: auto;
+}
+
+.reservation-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.reservation-status-pending {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fdba74;
+}
+
+.reservation-status-confirmed {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.reservation-status-cancelled {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fda4af;
+}
+
+.reservation-status-completed {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+@media (max-width: 900px) {
+  .reservation-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reservation-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
