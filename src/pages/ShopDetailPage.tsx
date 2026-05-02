@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 import { googleMapsEmbedApiKey } from '../services/geocodingService';
 import { appendAdminOperationLog } from '../services/adminOperationLogService';
-import { createReservation } from '../services/reservationService';
+import { createReservation, sendReservationConfirmationEmail } from '../services/reservationService';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 const MAP_LOAD_HELP_MESSAGE = '地図を読み込めませんでした。Google Maps APIキーの設定、HTTPリファラー制限、Maps JavaScript APIの有効化を確認してください。';
@@ -145,7 +145,9 @@ export function ShopDetailPage() {
 
       const reservationDatetime = new Date(`${reservationDate}T${reservationTime}`).toISOString();
 
-      await createReservation({
+      const note = reservationForm.note.trim() || null;
+
+      const createdReservation = await createReservation({
         shopId: shop.id,
         shopName: shop.name,
         customerName,
@@ -153,11 +155,32 @@ export function ShopDetailPage() {
         customerEmail,
         reservationDatetime,
         partySize,
-        note: reservationForm.note.trim() || null,
+        note,
         status: 'pending',
       });
 
-      setReservationSuccessMessage('予約が完了しました。店舗からの確認連絡をお待ちください。');
+      let emailSendSucceeded = true;
+      try {
+        await sendReservationConfirmationEmail({
+          reservationId: createdReservation.id,
+          customerName,
+          customerPhone,
+          customerEmail,
+          shopName: shop.name,
+          reservationDatetime,
+          partySize,
+          note,
+        });
+      } catch (emailError) {
+        emailSendSucceeded = false;
+        console.error('[reservation] confirmation email send failed', emailError);
+      }
+
+      setReservationSuccessMessage(
+        emailSendSucceeded
+          ? '予約が完了しました。確認メールを送信しました。'
+          : '予約は完了しましたが、確認メールの送信に失敗しました。',
+      );
       setIsReservationCompleted(true);
       setReservationForm(initialReservationFormData);
     } catch (error) {
