@@ -107,38 +107,38 @@ export function ShopDetailPage() {
     event.preventDefault();
     setReservationSuccessMessage(null);
     setReservationErrorMessage(null);
-
-    const customerName = reservationForm.customerName.trim();
-    const customerPhone = reservationForm.customerPhone.trim();
-    const customerEmail = reservationForm.customerEmail.trim();
-    const reservationDate = reservationForm.reservationDate;
-    const reservationTime = reservationForm.reservationTime;
-    const partySize = Number(reservationForm.partySize);
-
-    if (!customerName || !customerPhone || !customerEmail || !reservationDate || !reservationTime || !reservationForm.partySize) {
-      setReservationErrorMessage('必須項目を入力してください。');
-      return;
-    }
-
-    if (!isValidEmail(customerEmail)) {
-      setReservationErrorMessage('メールアドレスの形式が正しくありません。');
-      return;
-    }
-
-    if (!Number.isInteger(partySize) || partySize < 1) {
-      setReservationErrorMessage('人数は1人以上で入力してください。');
-      return;
-    }
-
-    if (!isSupabaseConfigured) {
-      setReservationErrorMessage('現在予約機能を利用できません。管理者へお問い合わせください。');
-      return;
-    }
-
-    const reservationDatetime = new Date(`${reservationDate}T${reservationTime}`).toISOString();
-
     setIsSubmittingReservation(true);
+
     try {
+      const customerName = reservationForm.customerName.trim();
+      const customerPhone = reservationForm.customerPhone.trim();
+      const customerEmail = reservationForm.customerEmail.trim();
+      const reservationDate = reservationForm.reservationDate;
+      const reservationTime = reservationForm.reservationTime;
+      const partySize = Number(reservationForm.partySize);
+
+      if (!customerName || !customerPhone || !customerEmail || !reservationDate || !reservationTime || !reservationForm.partySize) {
+        setReservationErrorMessage('必須項目を入力してください。');
+        return;
+      }
+
+      if (!isValidEmail(customerEmail)) {
+        setReservationErrorMessage('メールアドレスの形式が正しくありません。');
+        return;
+      }
+
+      if (!Number.isInteger(partySize) || partySize < 1) {
+        setReservationErrorMessage('人数は1人以上で入力してください。');
+        return;
+      }
+
+      if (!isSupabaseConfigured) {
+        setReservationErrorMessage('現在予約機能を利用できません。管理者へお問い合わせください。');
+        return;
+      }
+
+      const reservationDatetime = new Date(`${reservationDate}T${reservationTime}`).toISOString();
+
       await createReservation({
         shopId: shop.id,
         shopName: shop.name,
@@ -238,7 +238,7 @@ export function ShopDetailPage() {
           <h2>予約フォーム</h2>
           {reservationSuccessMessage ? <p className="status-ok">{reservationSuccessMessage}</p> : null}
           {reservationErrorMessage ? <p className="status-error">{reservationErrorMessage}</p> : null}
-          <form className="shop-form" onSubmit={(event) => void handleReservationSubmit(event)}>
+          <form className="shop-form" noValidate onSubmit={(event) => void handleReservationSubmit(event)}>
             <div>
               <label htmlFor="customerName">
                 予約者名<span className="required">*</span>
@@ -248,7 +248,6 @@ export function ShopDetailPage() {
                 name="customerName"
                 value={reservationForm.customerName}
                 onChange={(event) => handleReservationChange('customerName', event.target.value)}
-                required
               />
             </div>
             <div>
@@ -260,7 +259,6 @@ export function ShopDetailPage() {
                 name="customerPhone"
                 value={reservationForm.customerPhone}
                 onChange={(event) => handleReservationChange('customerPhone', event.target.value)}
-                required
               />
             </div>
             <div>
@@ -269,11 +267,9 @@ export function ShopDetailPage() {
               </label>
               <input
                 id="customerEmail"
-                type="email"
                 name="customerEmail"
                 value={reservationForm.customerEmail}
                 onChange={(event) => handleReservationChange('customerEmail', event.target.value)}
-                required
               />
             </div>
             <div>
@@ -286,7 +282,6 @@ export function ShopDetailPage() {
                 name="reservationDate"
                 value={reservationForm.reservationDate}
                 onChange={(event) => handleReservationChange('reservationDate', event.target.value)}
-                required
               />
             </div>
             <div>
@@ -299,7 +294,6 @@ export function ShopDetailPage() {
                 name="reservationTime"
                 value={reservationForm.reservationTime}
                 onChange={(event) => handleReservationChange('reservationTime', event.target.value)}
-                required
               />
             </div>
             <div>
@@ -310,10 +304,8 @@ export function ShopDetailPage() {
                 id="partySize"
                 type="number"
                 name="partySize"
-                min={1}
                 value={reservationForm.partySize}
                 onChange={(event) => handleReservationChange('partySize', event.target.value)}
-                required
               />
             </div>
             <div>
