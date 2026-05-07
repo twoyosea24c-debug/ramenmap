@@ -6,16 +6,29 @@ const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') ?? 'Ramen Map <onboa
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const generateCode = (): string => String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
   try {
@@ -23,24 +36,17 @@ Deno.serve(async (req) => {
     const normalizedEmail = email?.trim().toLowerCase();
 
     if (!normalizedEmail) {
-      return new Response(JSON.stringify({ error: 'メールアドレスを入力してください。' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'メールアドレスを入力してください。' }, 400);
     }
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return new Response(JSON.stringify({ error: 'Supabase環境変数が未設定です。' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      console.error('[send-reservation-verification-code] Supabase env vars are missing.');
+      return jsonResponse({ error: 'Supabase環境変数が未設定です。' }, 500);
     }
 
     if (!resend) {
-      return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      console.error('[send-reservation-verification-code] RESEND_API_KEY is not configured.');
+      return jsonResponse({ error: 'RESEND_API_KEY is not configured' }, 500);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -60,22 +66,21 @@ Deno.serve(async (req) => {
       throw insertError;
     }
 
-    await resend.emails.send({
+    const mailResult = await resend.emails.send({
       from: RESEND_FROM_EMAIL,
       to: normalizedEmail,
       subject: 'ラーメンマップ 予約確認用コード',
       text: `予約確認用の認証コードは ${code} です。\n\nこのコードの有効期限は10分です。\n心当たりがない場合はこのメールを破棄してください。`,
     });
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (mailResult.error) {
+      console.error('[send-reservation-verification-code] Resend failed', mailResult.error);
+      return jsonResponse({ error: mailResult.error.message ?? 'メール送信に失敗しました。' }, 500);
+    }
+
+    return jsonResponse({ ok: true });
   } catch (error) {
     console.error('[send-reservation-verification-code] failed', error);
-    return new Response(JSON.stringify({ error: '認証コード送信に失敗しました。' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: '認証コード送信に失敗しました。' }, 500);
   }
 });
