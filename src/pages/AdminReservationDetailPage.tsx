@@ -155,6 +155,8 @@ export function AdminReservationDetailPage() {
               <div><dt>ステータス</dt><dd><span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span></dd></div>
               <div><dt>備考</dt><dd>{reservation.note?.trim() ? reservation.note : '—'}</dd></div>
               <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason?.trim() ? reservation.cancelReason : '—'}</dd></div>
+              <div><dt>キャンセル依頼日時</dt><dd>{reservation.cancelRequestedAt ? formatDateTime(reservation.cancelRequestedAt) : '—'}</dd></div>
+              <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason?.trim() ? reservation.cancelRequestReason : '—'}</dd></div>
               <div><dt>申込日時</dt><dd>{formatDateTime(reservation.createdAt)}</dd></div>
               <div><dt>更新日時</dt><dd>{formatDateTime(reservation.updatedAt)}</dd></div>
             </dl>

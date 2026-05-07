@@ -1301,3 +1301,19 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.reservation-check-actions {
+  margin-top: 0.8rem;
+}
+
+.reservation-cancel-request-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  background: #fef3c7;
+}
