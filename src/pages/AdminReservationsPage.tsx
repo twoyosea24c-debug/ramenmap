@@ -536,7 +536,7 @@ export function AdminReservationsPage() {
                   />
                 </th>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>キャンセル依頼</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
@@ -568,7 +568,7 @@ export function AdminReservationsPage() {
                     <td>{reservation.partySize}名</td>
                     <td>
                       <div className="reservation-status-actions">
-                        <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>
+                        <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>{reservation.cancelRequestedAt ? <span className="reservation-cancel-request-badge">キャンセル依頼あり</span> : null}
                         <select
                           aria-label={`予約ID ${reservation.id} のステータス変更`}
                           value={reservation.status}
@@ -607,6 +607,7 @@ export function AdminReservationsPage() {
                       </div>
                     </td>
                     <td>{reservation.status === 'canceled' ? reservation.cancelReason ?? '—' : '—'}</td>
+                    <td>{reservation.cancelRequestedAt ? 'キャンセル依頼あり' : '—'}</td>
                     <td>
                       {isEditingMemo ? (
                         <div className="reservation-memo-editor">

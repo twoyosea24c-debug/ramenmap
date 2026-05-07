@@ -16,6 +16,8 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   note: row.note,
   cancelReason: row.cancel_reason,
   adminMemo: row.admin_memo,
+  cancelRequestedAt: row.cancel_requested_at,
+  cancelRequestReason: row.cancel_request_reason,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -92,7 +94,7 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
   });
   if (error) throw error;
   const now = new Date().toISOString();
-  return { id: crypto.randomUUID?.() ?? `${Date.now()}`, shopId: input.shopId, shopName: input.shopName, customerName: input.customerName, customerPhone: input.customerPhone, customerEmail: input.customerEmail, reservationDatetime: input.reservationDatetime, partySize: input.partySize, status, note, cancelReason: null, adminMemo: null, createdAt: now, updatedAt: now };
+  return { id: crypto.randomUUID?.() ?? `${Date.now()}`, shopId: input.shopId, shopName: input.shopName, customerName: input.customerName, customerPhone: input.customerPhone, customerEmail: input.customerEmail, reservationDatetime: input.reservationDatetime, partySize: input.partySize, status, note, cancelReason: null, adminMemo: null, cancelRequestedAt: null, cancelRequestReason: null, createdAt: now, updatedAt: now };
 };
 
 export const updateReservationStatus = async (reservationId: Reservation['id'], status: ReservationStatus): Promise<Reservation> => {
@@ -130,4 +132,36 @@ export const updateReservationAdminMemo = async (reservationId: Reservation['id'
   const { data, error } = await supabase.from(RESERVATIONS_TABLE).update({ admin_memo: adminMemo }).eq('id', reservationId).select('*').single();
   if (error) throw error;
   return mapReservationRow(data as SupabaseReservationRow);
+};
+
+
+export const requestReservationCancellation = async (reservationId: Reservation['id'], cancelRequestReason: string): Promise<Reservation> => {
+  if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update({ cancel_requested_at: new Date().toISOString(), cancel_request_reason: cancelRequestReason })
+    .eq('id', reservationId)
+    .is('cancel_requested_at', null)
+    .not('status', 'in', '(canceled,visited)')
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
+export const sendCancelRequestAdminNotification = async (reservation: Reservation): Promise<void> => {
+  if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  const { error } = await supabase.functions.invoke('send-cancel-request-admin-email', {
+    body: {
+      shopName: reservation.shopName,
+      customerName: reservation.customerName,
+      reservationDatetime: reservation.reservationDatetime,
+      partySize: reservation.partySize,
+      customerPhone: reservation.customerPhone,
+      customerEmail: reservation.customerEmail,
+      cancelRequestReason: reservation.cancelRequestReason ?? '',
+    },
+  });
+  if (error) throw error;
 };

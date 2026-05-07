@@ -2,6 +2,8 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Reservation, ReservationStatus } from '../types';
 import {
   fetchReservationsByCustomerEmail,
+  requestReservationCancellation,
+  sendCancelRequestAdminNotification,
   sendReservationVerificationCode,
   verifyReservationCode,
 } from '../services/reservationService';
@@ -28,6 +30,7 @@ export function ReservationCheckPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [codeSentAt, setCodeSentAt] = useState<number | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [submittingCancelRequestId, setSubmittingCancelRequestId] = useState<string | null>(null);
 
   const [nowTick, setNowTick] = useState(Date.now());
 
@@ -42,6 +45,46 @@ export function ReservationCheckPage() {
     const elapsed = Math.floor((nowTick - codeSentAt) / 1000);
     return Math.max(0, 30 - elapsed);
   }, [codeSentAt, nowTick]);
+
+
+
+  const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
+
+  const handleCancelRequest = async (reservation: Reservation) => {
+    if (reservation.status === 'canceled' || reservation.status === 'visited' || reservation.cancelRequestedAt) return;
+
+    const suggested = `キャンセル依頼理由を入力してください。\n候補: ${CANCEL_REQUEST_REASON_OPTIONS.join(' / ')}`;
+    const input = window.prompt(suggested, reservation.cancelRequestReason ?? '');
+    if (input === null) return;
+
+    const reason = input.trim();
+    if (!reason) {
+      setErrorMessage('キャンセル依頼の理由を入力してください。');
+      return;
+    }
+
+    const confirmed = window.confirm('この予約のキャンセル依頼を送信しますか？');
+    if (!confirmed) return;
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setSubmittingCancelRequestId(reservation.id);
+    try {
+      const updated = await requestReservationCancellation(reservation.id, reason);
+      setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setSuccessMessage('キャンセル依頼を送信しました。店舗からの確認連絡をお待ちください。');
+      try {
+        await sendCancelRequestAdminNotification(updated);
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('キャンセル依頼の送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSubmittingCancelRequestId(null);
+    }
+  };
 
   const sortedReservations = useMemo(() => {
     const now = Date.now();
@@ -152,7 +195,23 @@ export function ReservationCheckPage() {
             <div><dt>備考</dt><dd>{reservation.note || '—'}</dd></div>
             <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason || '—'}</dd></div>
             <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
+            <div><dt>キャンセル依頼</dt><dd>{reservation.cancelRequestedAt ? 'キャンセル依頼済み' : '—'}</dd></div>
+            {reservation.cancelRequestedAt ? <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason || '—'}</dd></div> : null}
           </dl>
+          <div className="reservation-check-actions">
+            {reservation.cancelRequestedAt ? (
+              <span className="reservation-action-muted">キャンセル依頼済み</span>
+            ) : (
+              <button
+                type="button"
+                className="button-secondary"
+                disabled={reservation.status === 'canceled' || reservation.status === 'visited' || submittingCancelRequestId === reservation.id}
+                onClick={() => { void handleCancelRequest(reservation); }}
+              >
+                {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
+              </button>
+            )}
+          </div>
         </article>
       ))}
     </section>
