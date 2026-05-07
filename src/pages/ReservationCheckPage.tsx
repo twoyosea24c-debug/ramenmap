@@ -43,6 +43,15 @@ export function ReservationCheckPage() {
     return Math.max(0, 30 - elapsed);
   }, [codeSentAt, nowTick]);
 
+  const sortedReservations = useMemo(() => {
+    const now = Date.now();
+    return [...reservations].sort((a, b) => {
+      const aDiff = Math.abs(new Date(a.reservationDatetime).getTime() - now);
+      const bDiff = Math.abs(new Date(b.reservationDatetime).getTime() - now);
+      return aDiff - bDiff;
+    });
+  }, [reservations]);
+
   const sendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -58,6 +67,7 @@ export function ReservationCheckPage() {
     try {
       await sendReservationVerificationCode(email.trim());
       setCodeSentAt(Date.now());
+      setCode('');
       setSuccessMessage('認証コードを送信しました。メールをご確認ください。');
     } catch (error) {
       console.error(error);
@@ -114,22 +124,24 @@ export function ReservationCheckPage() {
 
         {isSendingCode ? <p>認証コードを送信中...</p> : null}
 
-        <form className="shop-form" noValidate onSubmit={(e) => void verifyCodeAndFetchReservations(e)}>
-          <div>
-            <label htmlFor="verificationCode">認証コード</label>
-            <input id="verificationCode" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
-          </div>
-          <div className="shop-form-actions">
-            <button type="submit" className="button-primary" disabled={isVerifying}>予約を確認する</button>
-          </div>
-        </form>
+        {codeSentAt ? (
+          <form className="shop-form" noValidate onSubmit={(e) => void verifyCodeAndFetchReservations(e)}>
+            <div>
+              <label htmlFor="verificationCode">認証コード</label>
+              <input id="verificationCode" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+            </div>
+            <div className="shop-form-actions">
+              <button type="submit" className="button-primary" disabled={isVerifying}>予約を確認する</button>
+            </div>
+          </form>
+        ) : null}
 
         {isVerifying ? <p>予約情報を確認中...</p> : null}
         {errorMessage ? <p className="status-error">{errorMessage}</p> : null}
         {successMessage ? <p>{successMessage}</p> : null}
       </article>
 
-      {reservations.map((reservation) => (
+      {sortedReservations.map((reservation) => (
         <article key={reservation.id} className="card reservation-result-card" aria-label="予約確認結果">
           <h2>{reservation.shopName}</h2>
           <dl className="detail-list reservation-result-list">
