@@ -140,6 +140,14 @@ export function AdminReservationDetailPage() {
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
       {!isLoading && !errorMessage && !reservation ? <p className="result-count">予約が見つかりません。</p> : null}
 
+      {!isLoading && !errorMessage && reservation?.cancelRequestedAt ? (
+        <section className={reservation.status === 'canceled' ? 'checklist-item-ok' : 'checklist-item-attention'}>
+          <strong>{reservation.status === 'canceled' ? 'キャンセル依頼から処理済みです。' : 'キャンセル依頼があります。'}</strong>
+          <p>{reservation.cancelRequestReason?.trim() ? `依頼理由：${reservation.cancelRequestReason}` : '依頼理由：理由未入力'}</p>
+          <p>依頼日時：{formatDateTime(reservation.cancelRequestedAt)}</p>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && reservation ? (
         <div className="reservation-detail-grid">
           <article className="card reservation-detail-card">
