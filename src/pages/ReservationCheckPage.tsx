@@ -210,16 +210,22 @@ export function ReservationCheckPage() {
           </dl>
           <div className="reservation-check-actions">
             {reservation.cancelRequestedAt ? (
-              <span className="reservation-action-muted">キャンセル依頼済み</span>
+              <p className="form-hint">キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。</p>
             ) : (
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={reservation.status === 'canceled' || reservation.status === 'visited' || submittingCancelRequestId === reservation.id}
-                onClick={() => { void handleCancelRequest(reservation); }}
-              >
-                {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
-              </button>
+              <>
+                <p className="form-hint">
+                  キャンセルをご希望の場合は、店舗へキャンセル依頼を送信できます。
+                  店舗確認後にキャンセル処理が行われます。
+                </p>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  disabled={reservation.status === 'canceled' || reservation.status === 'visited' || submittingCancelRequestId === reservation.id}
+                  onClick={() => { void handleCancelRequest(reservation); }}
+                >
+                  {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
+                </button>
+              </>
             )}
           </div>
         </article>
