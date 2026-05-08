@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   cancelReservation,
   fetchReservationById,
+  sendReservationCancelledEmail,
   updateReservationAdminMemo,
   updateReservationStatus,
 } from '../services/reservationService';
@@ -81,6 +82,13 @@ export function AdminReservationDetailPage() {
       const updated = await updateReservationStatus(reservation.id, nextStatus);
       setReservation(updated);
       setMemoDraft(updated.adminMemo ?? '');
+      if (updated.status === 'canceled') {
+        try {
+          await sendReservationCancelledEmail(updated);
+        } catch (notificationError) {
+          console.error(notificationError);
+        }
+      }
     } catch {
       setStatusErrorMessage('ステータスの更新に失敗しました。Supabase設定を確認してください。');
     } finally {
@@ -107,6 +115,11 @@ export function AdminReservationDetailPage() {
       const updated = await cancelReservation(reservation.id, cancelReason);
       setReservation(updated);
       setMemoDraft(updated.adminMemo ?? '');
+      try {
+        await sendReservationCancelledEmail(updated);
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
     } catch {
       setStatusErrorMessage('キャンセル処理に失敗しました。Supabase設定を確認してください。');
     } finally {
