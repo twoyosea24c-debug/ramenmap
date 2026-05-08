@@ -129,7 +129,11 @@ export function ReservationCheckPage() {
 
       const fetchedReservations = await fetchReservationsByCustomerEmail(email.trim(), code.trim());
       setReservations(fetchedReservations);
-      setSuccessMessage(fetchedReservations.length === 0 ? '該当する予約はありませんでした。' : null);
+      setSuccessMessage(
+        fetchedReservations.length === 0
+          ? '該当する予約はありませんでした。予約時に入力したメールアドレスと同じメールアドレスで確認してください。'
+          : '予約情報を表示しました。',
+      );
     } catch (error) {
       console.error(error);
       setErrorMessage('予約情報の確認に失敗しました。時間をおいて再度お試しください。');
