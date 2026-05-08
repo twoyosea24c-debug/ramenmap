@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import type { Reservation, ReservationStatus } from '../types';
 import {
   fetchReservationsByCustomerEmail,
@@ -31,20 +31,6 @@ export function ReservationCheckPage() {
   const [codeSentAt, setCodeSentAt] = useState<number | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [submittingCancelRequestId, setSubmittingCancelRequestId] = useState<string | null>(null);
-
-  const [nowTick, setNowTick] = useState(Date.now());
-
-  useEffect(() => {
-    if (!codeSentAt) return;
-    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [codeSentAt]);
-
-  const resendCooldownSeconds = useMemo(() => {
-    if (!codeSentAt) return 0;
-    const elapsed = Math.floor((nowTick - codeSentAt) / 1000);
-    return Math.max(0, 30 - elapsed);
-  }, [codeSentAt, nowTick]);
 
   const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
 
@@ -100,11 +86,6 @@ export function ReservationCheckPage() {
 
     if (!email.trim()) {
       setErrorMessage('メールアドレスを入力してください。');
-      return;
-    }
-
-    if (options?.isResend && resendCooldownSeconds > 0) {
-      setErrorMessage(`再送信は ${resendCooldownSeconds} 秒後にできます。`);
       return;
     }
 
@@ -173,11 +154,10 @@ export function ReservationCheckPage() {
               認証コードを送信
             </button>
             {codeSentAt ? (
-              <button type="button" className="button-secondary" disabled={isSendingCode || resendCooldownSeconds > 0} onClick={() => { void resendCode(); }}>
+              <button type="button" className="button-secondary" disabled={isSendingCode} onClick={() => { void resendCode(); }}>
                 認証コードを再送信
               </button>
             ) : null}
-            {codeSentAt && resendCooldownSeconds > 0 ? <p>再送信まで {resendCooldownSeconds} 秒</p> : null}
           </div>
         </form>
 
