@@ -161,7 +161,9 @@ export function ReservationCheckPage() {
     <section className="detail-wrapper reservation-check-wrapper">
       <h1>予約確認</h1>
       <article className="card reservation-check-card">
-        <p className="form-hint">メールアドレスへ認証コードを送りました。予約内容を確認できます。</p>
+        <p className="form-hint">
+          {codeSentAt ? 'メールアドレスへ認証コードを送りました。予約内容を確認できます。' : 'メールアドレスへ認証コードを送ります。予約内容を確認できます。'}
+        </p>
 
         <form className="shop-form" noValidate onSubmit={(e) => void sendCode(e)}>
           <div>
