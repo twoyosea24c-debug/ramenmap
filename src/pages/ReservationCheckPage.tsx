@@ -173,7 +173,15 @@ export function ReservationCheckPage() {
           <form className="shop-form" noValidate onSubmit={(e) => void verifyCodeAndFetchReservations(e)}>
             <div>
               <label htmlFor="verificationCode">認証コード</label>
-              <input id="verificationCode" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+              <p className="form-hint">メールに届いた6桁の数字を入力してください。</p>
+              <input
+                id="verificationCode"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="例：123456"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
             </div>
             <div className="shop-form-actions">
               <button type="submit" className="button-primary" disabled={isVerifying}>予約を確認する</button>
