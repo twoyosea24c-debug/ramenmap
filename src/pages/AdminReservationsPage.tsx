@@ -74,6 +74,13 @@ const isUrgentPendingReservation = (reservation: Reservation) => {
   return diff >= 0 && diff <= ONE_DAY_MS;
 };
 
+const getReservationRowClassName = (reservation: Reservation) => {
+  if (reservation.cancelRequestedAt && reservation.status !== 'canceled') return 'reservation-row-cancel-requested';
+  if (isUrgentPendingReservation(reservation)) return 'reservation-row-urgent-pending';
+  if (reservation.status === 'pending') return 'reservation-row-pending';
+  return undefined;
+};
+
 export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('all');
@@ -135,7 +142,8 @@ export function AdminReservationsPage() {
           reservation.shopName.toLowerCase().includes(normalizedKeyword) ||
           reservation.customerName.toLowerCase().includes(normalizedKeyword) ||
           reservation.customerPhone.toLowerCase().includes(normalizedKeyword) ||
-          reservation.customerEmail.toLowerCase().includes(normalizedKeyword);
+          reservation.customerEmail.toLowerCase().includes(normalizedKeyword) ||
+          (reservation.cancelRequestReason?.toLowerCase().includes(normalizedKeyword) ?? false);
 
         const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
         const reservationDate = new Date(reservation.reservationDatetime);
@@ -155,7 +163,10 @@ export function AdminReservationsPage() {
         const bReservationTime = new Date(b.reservationDatetime).getTime();
         const aCreatedTime = new Date(a.createdAt).getTime();
         const bCreatedTime = new Date(b.createdAt).getTime();
+        const aHasOpenCancelRequest = Boolean(a.cancelRequestedAt) && a.status !== 'canceled';
+        const bHasOpenCancelRequest = Boolean(b.cancelRequestedAt) && b.status !== 'canceled';
 
+        if (aHasOpenCancelRequest !== bHasOpenCancelRequest) return aHasOpenCancelRequest ? -1 : 1;
         if (sortOption === 'reservationAsc') return aReservationTime - bReservationTime;
         if (sortOption === 'reservationDesc') return bReservationTime - aReservationTime;
         if (sortOption === 'createdDesc') return bCreatedTime - aCreatedTime;
@@ -354,6 +365,8 @@ export function AdminReservationsPage() {
       '人数',
       'ステータス',
       'キャンセル理由',
+      'キャンセル依頼',
+      'キャンセル依頼理由',
       '管理メモ',
       '備考',
       '申込日時',
@@ -369,6 +382,8 @@ export function AdminReservationsPage() {
       reservation.partySize,
       STATUS_LABEL[reservation.status],
       reservation.cancelReason ?? '',
+      reservation.cancelRequestedAt ? 'キャンセル依頼あり' : '',
+      reservation.cancelRequestReason ?? '',
       reservation.adminMemo ?? '',
       reservation.note ?? '',
       reservation.createdAt,
@@ -422,13 +437,13 @@ export function AdminReservationsPage() {
 
       <section className="reservation-filter-grid" aria-label="予約の検索と絞り込み">
         <div>
-          <label htmlFor="reservation-search">店舗名 / 予約者名 / 電話番号 / メールアドレスで検索</label>
+          <label htmlFor="reservation-search">店舗名 / 予約者名 / 電話番号 / メールアドレス / キャンセル依頼理由で検索</label>
           <input
             id="reservation-search"
             type="search"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="例: 新宿 / 山田 / 090 / user@example.com"
+            placeholder="例: 新宿 / 山田 / 090 / user@example.com / 予定変更"
           />
         </div>
         <div>
@@ -546,7 +561,7 @@ export function AdminReservationsPage() {
                 const isEditingMemo = editingMemoReservationId === reservation.id;
 
                 return (
-                  <tr key={reservation.id} className={isUrgentPendingReservation(reservation) ? 'reservation-row-urgent-pending' : reservation.status === 'pending' ? 'reservation-row-pending' : undefined}>
+                  <tr key={reservation.id} className={getReservationRowClassName(reservation)}>
                     <td>
                       <input
                         type="checkbox"
@@ -607,7 +622,14 @@ export function AdminReservationsPage() {
                       </div>
                     </td>
                     <td>{reservation.status === 'canceled' ? reservation.cancelReason ?? '—' : '—'}</td>
-                    <td>{reservation.cancelRequestedAt ? 'キャンセル依頼あり' : '—'}</td>
+                    <td>
+                      {reservation.cancelRequestedAt ? (
+                        <div className="reservation-memo-display">
+                          <strong>キャンセル依頼あり</strong>
+                          <p>{reservation.cancelRequestReason?.trim() ? reservation.cancelRequestReason : '理由未入力'}</p>
+                        </div>
+                      ) : '—'}
+                    </td>
                     <td>
                       {isEditingMemo ? (
                         <div className="reservation-memo-editor">
