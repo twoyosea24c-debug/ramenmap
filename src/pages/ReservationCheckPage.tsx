@@ -209,7 +209,11 @@ export function ReservationCheckPage() {
             {reservation.cancelRequestedAt ? <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason || '—'}</dd></div> : null}
           </dl>
           <div className="reservation-check-actions">
-            {reservation.cancelRequestedAt ? (
+            {reservation.status === 'canceled' ? (
+              <p className="form-hint">この予約はキャンセル済みです。</p>
+            ) : reservation.status === 'visited' ? (
+              <p className="form-hint">この予約は来店済みです。</p>
+            ) : reservation.cancelRequestedAt ? (
               <p className="form-hint">キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。</p>
             ) : (
               <>
@@ -220,7 +224,7 @@ export function ReservationCheckPage() {
                 <button
                   type="button"
                   className="button-secondary"
-                  disabled={reservation.status === 'canceled' || reservation.status === 'visited' || submittingCancelRequestId === reservation.id}
+                  disabled={submittingCancelRequestId === reservation.id}
                   onClick={() => { void handleCancelRequest(reservation); }}
                 >
                   {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
