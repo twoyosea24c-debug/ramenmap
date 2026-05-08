@@ -4,6 +4,7 @@ import {
   bulkUpdateReservationStatus,
   cancelReservation,
   fetchReservations,
+  sendReservationCancelledEmail,
   updateReservationAdminMemo,
   updateReservationStatus,
 } from '../services/reservationService';
@@ -264,6 +265,11 @@ export function AdminReservationsPage() {
     try {
       const updated = await cancelReservation(reservation.id, cancelReason);
       setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      try {
+        await sendReservationCancelledEmail(updated);
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
     } catch {
       setStatusErrorMessage('キャンセル処理に失敗しました。Supabase設定を確認してください。');
     } finally {
@@ -345,6 +351,9 @@ export function AdminReservationsPage() {
       setReservations((prev) =>
         prev.map((reservation) => updatedById.get(reservation.id) ?? reservation),
       );
+      updatedReservations.filter((reservation) => reservation.status === 'canceled').forEach((reservation) => {
+        void sendReservationCancelledEmail(reservation).catch((notificationError) => console.error(notificationError));
+      });
       setSelectedReservationIds([]);
     } catch {
       setStatusErrorMessage('一括ステータス変更に失敗しました。Supabase設定を確認してください。');
