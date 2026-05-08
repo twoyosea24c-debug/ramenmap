@@ -117,6 +117,22 @@ export const cancelReservation = async (reservationId: Reservation['id'], cancel
   return mapReservationRow(data as SupabaseReservationRow);
 };
 
+export const sendReservationCancelledEmail = async (reservation: Reservation): Promise<void> => {
+  if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  const { error } = await supabase.functions.invoke('send-reservation-cancelled-email', {
+    body: {
+      reservationId: reservation.id,
+      customerName: reservation.customerName,
+      customerEmail: reservation.customerEmail,
+      shopName: reservation.shopName,
+      reservationDatetime: reservation.reservationDatetime,
+      partySize: reservation.partySize,
+      cancelReason: reservation.cancelReason ?? '',
+    },
+  });
+  if (error) throw error;
+};
+
 export const bulkUpdateReservationStatus = async (reservationIds: Reservation['id'][], status: ReservationStatus, cancelReason?: string): Promise<Reservation[]> => {
   if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   if (reservationIds.length === 0) return [];
