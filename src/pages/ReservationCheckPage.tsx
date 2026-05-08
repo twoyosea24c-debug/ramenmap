@@ -46,8 +46,6 @@ export function ReservationCheckPage() {
     return Math.max(0, 30 - elapsed);
   }, [codeSentAt, nowTick]);
 
-
-
   const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
 
   const handleCancelRequest = async (reservation: Reservation) => {
@@ -95,8 +93,7 @@ export function ReservationCheckPage() {
     });
   }, [reservations]);
 
-  const sendCode = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const requestCode = async (options?: { isResend?: boolean }) => {
     setErrorMessage(null);
     setSuccessMessage(null);
     setReservations([]);
@@ -106,18 +103,32 @@ export function ReservationCheckPage() {
       return;
     }
 
+    if (options?.isResend && resendCooldownSeconds > 0) {
+      setErrorMessage(`再送信は ${resendCooldownSeconds} 秒後にできます。`);
+      return;
+    }
+
     setIsSendingCode(true);
     try {
       await sendReservationVerificationCode(email.trim());
       setCodeSentAt(Date.now());
       setCode('');
-      setSuccessMessage('認証コードを送信しました。メールをご確認ください。');
+      setSuccessMessage(options?.isResend ? '認証コードを再送信しました。メールをご確認ください。' : '認証コードを送信しました。メールをご確認ください。');
     } catch (error) {
       console.error(error);
       setErrorMessage('認証コード送信に失敗しました。時間をおいて再度お試しください。');
     } finally {
       setIsSendingCode(false);
     }
+  };
+
+  const sendCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await requestCode();
+  };
+
+  const resendCode = async () => {
+    await requestCode({ isResend: true });
   };
 
   const verifyCodeAndFetchReservations = async (event: FormEvent<HTMLFormElement>) => {
@@ -158,9 +169,14 @@ export function ReservationCheckPage() {
             <input id="customerEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="shop-form-actions">
-            <button type="submit" className="button-primary" disabled={isSendingCode || resendCooldownSeconds > 0}>
-              {codeSentAt ? '認証コードを再送信' : '認証コードを送信'}
+            <button type="submit" className="button-primary" disabled={isSendingCode || Boolean(codeSentAt)}>
+              認証コードを送信
             </button>
+            {codeSentAt ? (
+              <button type="button" className="button-secondary" disabled={isSendingCode || resendCooldownSeconds > 0} onClick={() => { void resendCode(); }}>
+                認証コードを再送信
+              </button>
+            ) : null}
             {codeSentAt && resendCooldownSeconds > 0 ? <p>再送信まで {resendCooldownSeconds} 秒</p> : null}
           </div>
         </form>
