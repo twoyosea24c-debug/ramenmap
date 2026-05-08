@@ -210,11 +210,11 @@ export function ReservationCheckPage() {
           </dl>
           <div className="reservation-check-actions">
             {reservation.status === 'canceled' ? (
-              <p className="form-hint">この予約はキャンセル済みです。</p>
+              <p className="checklist-item-attention">この予約はキャンセル済みです。</p>
             ) : reservation.status === 'visited' ? (
-              <p className="form-hint">この予約は来店済みです。</p>
+              <p className="checklist-item-ok">この予約は来店済みです。</p>
             ) : reservation.cancelRequestedAt ? (
-              <p className="form-hint">キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。</p>
+              <p className="checklist-item-attention">キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。</p>
             ) : (
               <>
                 <p className="form-hint">
