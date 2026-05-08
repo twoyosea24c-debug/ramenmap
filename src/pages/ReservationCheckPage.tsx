@@ -15,6 +15,13 @@ const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
   visited: '来店済み',
 };
 
+const RESERVATION_STATUS_CLASS_NAMES: Record<ReservationStatus, string> = {
+  pending: 'reservation-status-pending',
+  confirmed: 'reservation-status-confirmed',
+  canceled: 'reservation-status-cancelled',
+  visited: 'reservation-status-completed',
+};
+
 const formatReservationDatetime = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -201,7 +208,14 @@ export function ReservationCheckPage() {
             <div><dt>予約者名</dt><dd>{reservation.customerName}</dd></div>
             <div><dt>予約日時</dt><dd>{formatReservationDatetime(reservation.reservationDatetime)}</dd></div>
             <div><dt>人数</dt><dd>{reservation.partySize}名</dd></div>
-            <div><dt>ステータス</dt><dd>{RESERVATION_STATUS_LABELS[reservation.status]}</dd></div>
+            <div>
+              <dt>ステータス</dt>
+              <dd>
+                <span className={`reservation-status ${RESERVATION_STATUS_CLASS_NAMES[reservation.status]}`}>
+                  {RESERVATION_STATUS_LABELS[reservation.status]}
+                </span>
+              </dd>
+            </div>
             <div><dt>備考</dt><dd>{reservation.note || '—'}</dd></div>
             <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason || '—'}</dd></div>
             <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
