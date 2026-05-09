@@ -76,6 +76,7 @@ const isUrgentPendingReservation = (reservation: Reservation) => {
 };
 
 const getReservationRowClassName = (reservation: Reservation) => {
+  if (reservation.changeRequestedAt && reservation.status !== 'canceled' && reservation.status !== 'visited') return 'reservation-row-cancel-requested';
   if (reservation.cancelRequestedAt && reservation.status !== 'canceled') return 'reservation-row-cancel-requested';
   if (isUrgentPendingReservation(reservation)) return 'reservation-row-urgent-pending';
   if (reservation.status === 'pending') return 'reservation-row-pending';
@@ -144,7 +145,8 @@ export function AdminReservationsPage() {
           reservation.customerName.toLowerCase().includes(normalizedKeyword) ||
           reservation.customerPhone.toLowerCase().includes(normalizedKeyword) ||
           reservation.customerEmail.toLowerCase().includes(normalizedKeyword) ||
-          (reservation.cancelRequestReason?.toLowerCase().includes(normalizedKeyword) ?? false);
+          (reservation.cancelRequestReason?.toLowerCase().includes(normalizedKeyword) ?? false) ||
+          (reservation.changeRequestNote?.toLowerCase().includes(normalizedKeyword) ?? false);
 
         const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
         const reservationDate = new Date(reservation.reservationDatetime);
@@ -164,9 +166,12 @@ export function AdminReservationsPage() {
         const bReservationTime = new Date(b.reservationDatetime).getTime();
         const aCreatedTime = new Date(a.createdAt).getTime();
         const bCreatedTime = new Date(b.createdAt).getTime();
+        const aHasOpenChangeRequest = Boolean(a.changeRequestedAt) && a.status !== 'canceled' && a.status !== 'visited';
+        const bHasOpenChangeRequest = Boolean(b.changeRequestedAt) && b.status !== 'canceled' && b.status !== 'visited';
         const aHasOpenCancelRequest = Boolean(a.cancelRequestedAt) && a.status !== 'canceled';
         const bHasOpenCancelRequest = Boolean(b.cancelRequestedAt) && b.status !== 'canceled';
 
+        if (aHasOpenChangeRequest !== bHasOpenChangeRequest) return aHasOpenChangeRequest ? -1 : 1;
         if (aHasOpenCancelRequest !== bHasOpenCancelRequest) return aHasOpenCancelRequest ? -1 : 1;
         if (sortOption === 'reservationAsc') return aReservationTime - bReservationTime;
         if (sortOption === 'reservationDesc') return bReservationTime - aReservationTime;
@@ -376,6 +381,10 @@ export function AdminReservationsPage() {
       'キャンセル理由',
       'キャンセル依頼',
       'キャンセル依頼理由',
+      '予約変更依頼',
+      '希望日時',
+      '希望人数',
+      '変更依頼内容',
       '管理メモ',
       '備考',
       '申込日時',
@@ -393,6 +402,10 @@ export function AdminReservationsPage() {
       reservation.cancelReason ?? '',
       reservation.cancelRequestedAt ? 'キャンセル依頼あり' : '',
       reservation.cancelRequestReason ?? '',
+      reservation.changeRequestedAt ? '予約変更依頼あり' : '',
+      reservation.changeRequestDatetime ?? '',
+      reservation.changeRequestPartySize ?? '',
+      reservation.changeRequestNote ?? '',
       reservation.adminMemo ?? '',
       reservation.note ?? '',
       reservation.createdAt,
@@ -446,7 +459,7 @@ export function AdminReservationsPage() {
 
       <section className="reservation-filter-grid" aria-label="予約の検索と絞り込み">
         <div>
-          <label htmlFor="reservation-search">店舗名 / 予約者名 / 電話番号 / メールアドレス / キャンセル依頼理由で検索</label>
+          <label htmlFor="reservation-search">店舗名 / 予約者名 / 電話番号 / メールアドレス / キャンセル依頼理由 / 変更依頼内容で検索</label>
           <input
             id="reservation-search"
             type="search"
@@ -560,7 +573,7 @@ export function AdminReservationsPage() {
                   />
                 </th>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
-                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>キャンセル依頼</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
+                <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>キャンセル依頼</th><th>予約変更依頼</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
               </tr>
             </thead>
             <tbody>
@@ -592,7 +605,7 @@ export function AdminReservationsPage() {
                     <td>{reservation.partySize}名</td>
                     <td>
                       <div className="reservation-status-actions">
-                        <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>{reservation.cancelRequestedAt ? <span className="reservation-cancel-request-badge">キャンセル依頼あり</span> : null}
+                        <span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span>{reservation.cancelRequestedAt ? <span className="reservation-cancel-request-badge">キャンセル依頼あり</span> : null}{reservation.changeRequestedAt ? <span className="reservation-cancel-request-badge">変更依頼あり</span> : null}
                         <select
                           aria-label={`予約ID ${reservation.id} のステータス変更`}
                           value={reservation.status}
@@ -636,6 +649,16 @@ export function AdminReservationsPage() {
                         <div className="reservation-memo-display">
                           <strong>キャンセル依頼あり</strong>
                           <p>{reservation.cancelRequestReason?.trim() ? reservation.cancelRequestReason : '理由未入力'}</p>
+                        </div>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      {reservation.changeRequestedAt ? (
+                        <div className="reservation-memo-display">
+                          <strong>変更依頼あり</strong>
+                          <p>希望日時: {reservation.changeRequestDatetime ? formatDateTime(reservation.changeRequestDatetime) : '—'}</p>
+                          <p>希望人数: {reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</p>
+                          <p>{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '依頼内容未入力'}</p>
                         </div>
                       ) : '—'}
                     </td>
