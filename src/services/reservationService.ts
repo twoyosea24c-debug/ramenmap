@@ -36,6 +36,7 @@ type ReservationEmailPayload = {
   reservationDatetime: string;
   partySize: number;
   note?: string | null;
+  notificationType?: 'created' | 'changed';
 };
 
 type ReservationChangeRequestInput = {
