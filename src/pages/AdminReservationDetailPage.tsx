@@ -5,7 +5,7 @@ import {
   cancelReservation,
   fetchReservationById,
   sendReservationCancelledEmail,
-  sendReservationConfirmationEmail,
+  sendReservationChangedEmail,
   updateReservationAdminMemo,
   updateReservationStatus,
 } from '../services/reservationService';
@@ -57,6 +57,7 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   changeRequestDatetime: row.change_request_datetime,
   changeRequestPartySize: row.change_request_party_size,
   changeRequestNote: row.change_request_note,
+  changeCompletionEmailSentAt: row.change_completion_email_sent_at,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -154,17 +155,9 @@ export function AdminReservationDetailPage() {
       setReservation(updated);
       setMemoDraft(updated.adminMemo ?? '');
       try {
-        await sendReservationConfirmationEmail({
-          reservationId: updated.id,
-          customerName: updated.customerName,
-          customerPhone: updated.customerPhone,
-          customerEmail: updated.customerEmail,
-          shopName: updated.shopName,
-          reservationDatetime: updated.reservationDatetime,
-          partySize: updated.partySize,
-          note: updated.note,
-          notificationType: 'changed',
-        });
+        const emailedReservation = await sendReservationChangedEmail(updated);
+        setReservation(emailedReservation);
+        setMemoDraft(emailedReservation.adminMemo ?? '');
       } catch (notificationError) {
         console.error(notificationError);
       }
@@ -248,6 +241,13 @@ export function AdminReservationDetailPage() {
         </section>
       ) : null}
 
+      {!isLoading && !errorMessage && reservation?.changeCompletionEmailSentAt ? (
+        <section className="checklist-item-ok">
+          <strong>予約変更完了メール送信済み</strong>
+          <p>送信日時：{formatDateTime(reservation.changeCompletionEmailSentAt)}</p>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && reservation?.cancelRequestedAt ? (
         <section className={reservation.status === 'canceled' ? 'checklist-item-ok' : 'checklist-item-attention'}>
           <strong>{reservation.status === 'canceled' ? 'キャンセル依頼から処理済みです。' : 'キャンセル依頼があります。'}</strong>
@@ -281,6 +281,7 @@ export function AdminReservationDetailPage() {
               <div><dt>変更希望日時</dt><dd>{reservation.changeRequestDatetime ? formatDateTime(reservation.changeRequestDatetime) : '—'}</dd></div>
               <div><dt>変更希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div>
               <div><dt>変更依頼のご要望</dt><dd>{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '—'}</dd></div>
+              <div><dt>予約変更完了メール</dt><dd>{reservation.changeCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.changeCompletionEmailSentAt)}）` : '—'}</dd></div>
               <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason?.trim() ? reservation.cancelReason : '—'}</dd></div>
               <div><dt>キャンセル完了メール</dt><dd>{reservation.cancelCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.cancelCompletionEmailSentAt)}）` : '—'}</dd></div>
               <div><dt>キャンセル依頼日時</dt><dd>{reservation.cancelRequestedAt ? formatDateTime(reservation.cancelRequestedAt) : '—'}</dd></div>
