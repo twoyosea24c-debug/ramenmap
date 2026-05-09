@@ -156,6 +156,16 @@ export function AdminReservationDetailPage() {
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
       {!isLoading && !errorMessage && !reservation ? <p className="result-count">予約が見つかりません。</p> : null}
 
+      {!isLoading && !errorMessage && reservation?.changeRequestedAt ? (
+        <section className="checklist-item-attention">
+          <strong>予約変更依頼があります。</strong>
+          <p>希望日時：{reservation.changeRequestDatetime ? formatDateTime(reservation.changeRequestDatetime) : '—'}</p>
+          <p>希望人数：{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</p>
+          <p>ご要望：{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '—'}</p>
+          <p>依頼日時：{formatDateTime(reservation.changeRequestedAt)}</p>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && reservation?.cancelRequestedAt ? (
         <section className={reservation.status === 'canceled' ? 'checklist-item-ok' : 'checklist-item-attention'}>
           <strong>{reservation.status === 'canceled' ? 'キャンセル依頼から処理済みです。' : 'キャンセル依頼があります。'}</strong>
@@ -185,6 +195,10 @@ export function AdminReservationDetailPage() {
               <div><dt>人数</dt><dd>{reservation.partySize}名</dd></div>
               <div><dt>ステータス</dt><dd><span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span></dd></div>
               <div><dt>備考</dt><dd>{reservation.note?.trim() ? reservation.note : '—'}</dd></div>
+              <div><dt>予約変更依頼日時</dt><dd>{reservation.changeRequestedAt ? formatDateTime(reservation.changeRequestedAt) : '—'}</dd></div>
+              <div><dt>変更希望日時</dt><dd>{reservation.changeRequestDatetime ? formatDateTime(reservation.changeRequestDatetime) : '—'}</dd></div>
+              <div><dt>変更希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div>
+              <div><dt>変更依頼のご要望</dt><dd>{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '—'}</dd></div>
               <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason?.trim() ? reservation.cancelReason : '—'}</dd></div>
               <div><dt>キャンセル完了メール</dt><dd>{reservation.cancelCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.cancelCompletionEmailSentAt)}）` : '—'}</dd></div>
               <div><dt>キャンセル依頼日時</dt><dd>{reservation.cancelRequestedAt ? formatDateTime(reservation.cancelRequestedAt) : '—'}</dd></div>
