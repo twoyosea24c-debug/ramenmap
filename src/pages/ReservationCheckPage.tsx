@@ -3,6 +3,7 @@ import type { Reservation, ReservationStatus } from '../types';
 import {
   fetchReservationsByCustomerEmail,
   requestReservationCancellation,
+  requestReservationChange,
   sendCancelRequestAdminNotification,
   sendReservationVerificationCode,
   verifyReservationCode,
@@ -28,6 +29,14 @@ const formatReservationDatetime = (value: string): string => {
   return new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date);
 };
 
+const parseRequestedDatetime = (value: string): string | null => {
+  const normalizedValue = value.trim().replace(' ', 'T');
+  if (!normalizedValue) return null;
+  const date = new Date(normalizedValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
 export function ReservationCheckPage() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -38,8 +47,55 @@ export function ReservationCheckPage() {
   const [codeSentAt, setCodeSentAt] = useState<number | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [submittingCancelRequestId, setSubmittingCancelRequestId] = useState<string | null>(null);
+  const [submittingChangeRequestId, setSubmittingChangeRequestId] = useState<string | null>(null);
 
   const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
+
+  const handleChangeRequest = async (reservation: Reservation) => {
+    if (reservation.status === 'canceled' || reservation.status === 'visited') return;
+
+    const datetimeInput = window.prompt('希望日時を入力してください。例：2026-05-10 18:30\n日時変更が不要な場合は空欄でOKです。', '');
+    if (datetimeInput === null) return;
+    const requestedDatetime = parseRequestedDatetime(datetimeInput);
+    if (datetimeInput.trim() && !requestedDatetime) {
+      setErrorMessage('希望日時の形式が正しくありません。例：2026-05-10 18:30');
+      return;
+    }
+
+    const partySizeInput = window.prompt('希望人数を入力してください。人数変更が不要な場合は空欄でOKです。', '');
+    if (partySizeInput === null) return;
+    const requestedPartySize = partySizeInput.trim() ? Number(partySizeInput.trim()) : null;
+    if (requestedPartySize !== null && (!Number.isInteger(requestedPartySize) || requestedPartySize <= 0)) {
+      setErrorMessage('希望人数は1以上の数字で入力してください。');
+      return;
+    }
+
+    const noteInput = window.prompt('変更依頼の内容を入力してください。例：30分遅らせたい、人数を2名にしたい等', reservation.changeRequestNote ?? '');
+    if (noteInput === null) return;
+    const requestNote = noteInput.trim();
+
+    if (!requestedDatetime && !requestedPartySize && !requestNote) {
+      setErrorMessage('日時・人数・依頼内容のいずれかを入力してください。');
+      return;
+    }
+
+    const confirmed = window.confirm('この内容で予約変更依頼を送信しますか？');
+    if (!confirmed) return;
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setSubmittingChangeRequestId(reservation.id);
+    try {
+      const updated = await requestReservationChange({ reservationId: reservation.id, requestedDatetime, requestedPartySize, requestNote });
+      setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setSuccessMessage('予約変更依頼を送信しました。店舗からの確認連絡をお待ちください。');
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('予約変更依頼の送信に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setSubmittingChangeRequestId(null);
+    }
+  };
 
   const handleCancelRequest = async (reservation: Reservation) => {
     if (reservation.status === 'canceled' || reservation.status === 'visited' || reservation.cancelRequestedAt) return;
@@ -221,6 +277,10 @@ export function ReservationCheckPage() {
             <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
             <div><dt>キャンセル依頼</dt><dd>{reservation.cancelRequestedAt ? 'キャンセル依頼済み' : '—'}</dd></div>
             {reservation.cancelRequestedAt ? <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason || '—'}</dd></div> : null}
+            <div><dt>予約変更依頼</dt><dd>{reservation.changeRequestedAt ? '変更依頼済み' : '—'}</dd></div>
+            {reservation.changeRequestedAt ? <div><dt>希望日時</dt><dd>{reservation.changeRequestDatetime ? formatReservationDatetime(reservation.changeRequestDatetime) : '—'}</dd></div> : null}
+            {reservation.changeRequestedAt ? <div><dt>希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div> : null}
+            {reservation.changeRequestedAt ? <div><dt>変更依頼内容</dt><dd>{reservation.changeRequestNote || '—'}</dd></div> : null}
           </dl>
           <div className="reservation-check-actions">
             {reservation.status === 'canceled' ? (
@@ -237,27 +297,53 @@ export function ReservationCheckPage() {
               >
                 この予約は来店済みです。
               </p>
-            ) : reservation.cancelRequestedAt ? (
-              <p
-                className="checklist-item-attention"
-                style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
-              >
-                キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。
-              </p>
             ) : (
               <>
-                <p className="form-hint">
-                  キャンセルをご希望の場合は、店舗へキャンセル依頼を送信できます。
-                  店舗確認後にキャンセル処理が行われます。
-                </p>
-                <button
-                  type="button"
-                  className="button-secondary"
-                  disabled={submittingCancelRequestId === reservation.id}
-                  onClick={() => { void handleCancelRequest(reservation); }}
-                >
-                  {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
-                </button>
+                {reservation.changeRequestedAt ? (
+                  <p
+                    className="checklist-item-attention"
+                    style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                  >
+                    予約変更依頼を送信済みです。店舗からの確認連絡をお待ちください。
+                  </p>
+                ) : (
+                  <>
+                    <p className="form-hint">
+                      予約日時や人数の変更をご希望の場合は、店舗へ変更依頼を送信できます。
+                    </p>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      disabled={submittingChangeRequestId === reservation.id}
+                      onClick={() => { void handleChangeRequest(reservation); }}
+                    >
+                      {submittingChangeRequestId === reservation.id ? '送信中...' : '予約変更依頼'}
+                    </button>
+                  </>
+                )}
+                {reservation.cancelRequestedAt ? (
+                  <p
+                    className="checklist-item-attention"
+                    style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                  >
+                    キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。
+                  </p>
+                ) : (
+                  <>
+                    <p className="form-hint">
+                      キャンセルをご希望の場合は、店舗へキャンセル依頼を送信できます。
+                      店舗確認後にキャンセル処理が行われます。
+                    </p>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      disabled={submittingCancelRequestId === reservation.id}
+                      onClick={() => { void handleCancelRequest(reservation); }}
+                    >
+                      {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
+                    </button>
+                  </>
+                )}
               </>
             )}
           </div>
