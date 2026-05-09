@@ -111,7 +111,7 @@ export function ReservationCheckPage() {
     try {
       const updated = await requestReservationChange({ reservationId: reservation.id, requestedDatetime, requestedPartySize, requestNote });
       setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      setSuccessMessage('予約変更依頼を送信しました。店舗からの確認連絡をお待ちください。');
+      setSuccessMessage('変更依頼を受け付けました。店舗からの確認連絡をお待ちください。');
       closeChangeRequestForm();
     } catch (error) {
       console.error(error);
@@ -328,7 +328,7 @@ export function ReservationCheckPage() {
                     className="checklist-item-attention"
                     style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
                   >
-                    予約変更依頼を送信済みです。店舗からの確認連絡をお待ちください。
+                    変更依頼を受け付けました。店舗からの確認連絡をお待ちください。
                   </p>
                 ) : editingChangeRequestId === reservation.id ? (
                   <form className="shop-form" onSubmit={(event) => { void handleChangeRequestSubmit(event, reservation); }}>
