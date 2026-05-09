@@ -3,12 +3,13 @@ import { Resend } from 'npm:resend@4.0.0';
 type ReservationEmailPayload = {
   reservationId?: string;
   customerName: string;
-  customerPhone: string;
+  customerPhone?: string;
   customerEmail: string;
   shopName: string;
   reservationDatetime: string;
   partySize: number;
   note?: string | null;
+  notificationType?: 'created' | 'changed';
 };
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -51,9 +52,15 @@ const formatReservationDatetime = (isoDatetime: string): string => {
   }).format(date);
 };
 
-const buildCustomerMailText = (payload: ReservationEmailPayload): string => `ラーメンマップをご利用いただきありがとうございます。\n\n以下の内容で予約を受け付けました。\n\n予約番号: ${payload.reservationId ?? '（採番中）'}\n予約者名: ${payload.customerName}\n店舗名: ${payload.shopName}\n予約日時: ${formatReservationDatetime(payload.reservationDatetime)}\n人数: ${payload.partySize}名\n電話番号: ${payload.customerPhone}\nメールアドレス: ${payload.customerEmail}\n備考: ${payload.note?.trim() ? payload.note : 'なし'}\n予約ステータス: 未確認\n\n店舗からの確認連絡をお待ちください。`;
+const buildCustomerMailText = (payload: ReservationEmailPayload): string => {
+  if (payload.notificationType === 'changed') {
+    return `ラーメンマップをご利用いただきありがとうございます。\n\n以下の内容で予約変更が完了しました。\n\n予約番号: ${payload.reservationId ?? '—'}\n予約者名: ${payload.customerName}\n店舗名: ${payload.shopName}\n予約日時: ${formatReservationDatetime(payload.reservationDatetime)}\n人数: ${payload.partySize}名\n\n当日はお気をつけてお越しください。`;
+  }
 
-const buildAdminMailText = (payload: ReservationEmailPayload): string => `新しい予約が入りました。\n\n店舗名: ${payload.shopName}\n予約者名: ${payload.customerName}\n電話番号: ${payload.customerPhone}\nメールアドレス: ${payload.customerEmail}\n予約日時: ${formatReservationDatetime(payload.reservationDatetime)}\n人数: ${payload.partySize}名\n備考: ${payload.note?.trim() ? payload.note : 'なし'}\n\n管理画面で確認してください。`;
+  return `ラーメンマップをご利用いただきありがとうございます。\n\n以下の内容で予約を受け付けました。\n\n予約番号: ${payload.reservationId ?? '（採番中）'}\n予約者名: ${payload.customerName}\n店舗名: ${payload.shopName}\n予約日時: ${formatReservationDatetime(payload.reservationDatetime)}\n人数: ${payload.partySize}名\n電話番号: ${payload.customerPhone ?? '—'}\nメールアドレス: ${payload.customerEmail}\n備考: ${payload.note?.trim() ? payload.note : 'なし'}\n予約ステータス: 未確認\n\n店舗からの確認連絡をお待ちください。`;
+};
+
+const buildAdminMailText = (payload: ReservationEmailPayload): string => `新しい予約が入りました。\n\n店舗名: ${payload.shopName}\n予約者名: ${payload.customerName}\n電話番号: ${payload.customerPhone ?? '—'}\nメールアドレス: ${payload.customerEmail}\n予約日時: ${formatReservationDatetime(payload.reservationDatetime)}\n人数: ${payload.partySize}名\n備考: ${payload.note?.trim() ? payload.note : 'なし'}\n\n管理画面で確認してください。`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -78,7 +85,7 @@ Deno.serve(async (req) => {
     const customerMail = await resend.emails.send({
       from: RESEND_FROM_EMAIL,
       to: payload.customerEmail,
-      subject: 'ラーメンマップ 予約受付のお知らせ',
+      subject: payload.notificationType === 'changed' ? 'ラーメンマップ 予約変更完了のお知らせ' : 'ラーメンマップ 予約受付のお知らせ',
       text: buildCustomerMailText(payload),
     });
 
@@ -88,7 +95,7 @@ Deno.serve(async (req) => {
     }
 
     let adminMail: Awaited<ReturnType<typeof resend.emails.send>> | null = null;
-    if (ADMIN_NOTIFICATION_EMAIL) {
+    if (ADMIN_NOTIFICATION_EMAIL && payload.notificationType !== 'changed') {
       adminMail = await resend.emails.send({
         from: RESEND_FROM_EMAIL,
         to: ADMIN_NOTIFICATION_EMAIL,
