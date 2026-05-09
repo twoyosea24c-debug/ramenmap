@@ -30,11 +30,19 @@ const formatReservationDatetime = (value: string): string => {
 };
 
 const parseRequestedDatetime = (value: string): string | null => {
-  const normalizedValue = value.trim().replace(' ', 'T');
+  const normalizedValue = value.trim();
   if (!normalizedValue) return null;
   const date = new Date(normalizedValue);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
+};
+
+const formatDatetimeLocalValue = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
 };
 
 export function ReservationCheckPage() {
@@ -48,34 +56,49 @@ export function ReservationCheckPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [submittingCancelRequestId, setSubmittingCancelRequestId] = useState<string | null>(null);
   const [submittingChangeRequestId, setSubmittingChangeRequestId] = useState<string | null>(null);
+  const [editingChangeRequestId, setEditingChangeRequestId] = useState<string | null>(null);
+  const [changeRequestDatetime, setChangeRequestDatetime] = useState('');
+  const [changeRequestPartySize, setChangeRequestPartySize] = useState('');
+  const [changeRequestNote, setChangeRequestNote] = useState('');
 
   const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
 
-  const handleChangeRequest = async (reservation: Reservation) => {
+  const openChangeRequestForm = (reservation: Reservation) => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setEditingChangeRequestId(reservation.id);
+    setChangeRequestDatetime(reservation.changeRequestDatetime ? formatDatetimeLocalValue(reservation.changeRequestDatetime) : '');
+    setChangeRequestPartySize(reservation.changeRequestPartySize ? String(reservation.changeRequestPartySize) : '');
+    setChangeRequestNote(reservation.changeRequestNote ?? '');
+  };
+
+  const closeChangeRequestForm = () => {
+    setEditingChangeRequestId(null);
+    setChangeRequestDatetime('');
+    setChangeRequestPartySize('');
+    setChangeRequestNote('');
+  };
+
+  const handleChangeRequestSubmit = async (event: FormEvent<HTMLFormElement>, reservation: Reservation) => {
+    event.preventDefault();
     if (reservation.status === 'canceled' || reservation.status === 'visited') return;
 
-    const datetimeInput = window.prompt('希望日時を入力してください。例：2026-05-10 18:30\n日時変更が不要な場合は空欄でOKです。', '');
-    if (datetimeInput === null) return;
-    const requestedDatetime = parseRequestedDatetime(datetimeInput);
-    if (datetimeInput.trim() && !requestedDatetime) {
-      setErrorMessage('希望日時の形式が正しくありません。例：2026-05-10 18:30');
+    const requestedDatetime = parseRequestedDatetime(changeRequestDatetime);
+    if (changeRequestDatetime.trim() && !requestedDatetime) {
+      setErrorMessage('希望日時の形式が正しくありません。カレンダーから日時を選択してください。');
       return;
     }
 
-    const partySizeInput = window.prompt('希望人数を入力してください。人数変更が不要な場合は空欄でOKです。', '');
-    if (partySizeInput === null) return;
-    const requestedPartySize = partySizeInput.trim() ? Number(partySizeInput.trim()) : null;
+    const requestedPartySize = changeRequestPartySize.trim() ? Number(changeRequestPartySize.trim()) : null;
     if (requestedPartySize !== null && (!Number.isInteger(requestedPartySize) || requestedPartySize <= 0)) {
       setErrorMessage('希望人数は1以上の数字で入力してください。');
       return;
     }
 
-    const noteInput = window.prompt('変更依頼の内容を入力してください。例：30分遅らせたい、人数を2名にしたい等', reservation.changeRequestNote ?? '');
-    if (noteInput === null) return;
-    const requestNote = noteInput.trim();
+    const requestNote = changeRequestNote.trim();
 
     if (!requestedDatetime && !requestedPartySize && !requestNote) {
-      setErrorMessage('日時・人数・依頼内容のいずれかを入力してください。');
+      setErrorMessage('希望日時・希望人数・ご要望のいずれかを入力してください。');
       return;
     }
 
@@ -89,6 +112,7 @@ export function ReservationCheckPage() {
       const updated = await requestReservationChange({ reservationId: reservation.id, requestedDatetime, requestedPartySize, requestNote });
       setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setSuccessMessage('予約変更依頼を送信しました。店舗からの確認連絡をお待ちください。');
+      closeChangeRequestForm();
     } catch (error) {
       console.error(error);
       setErrorMessage('予約変更依頼の送信に失敗しました。時間をおいて再度お試しください。');
@@ -306,6 +330,50 @@ export function ReservationCheckPage() {
                   >
                     予約変更依頼を送信済みです。店舗からの確認連絡をお待ちください。
                   </p>
+                ) : editingChangeRequestId === reservation.id ? (
+                  <form className="shop-form" onSubmit={(event) => { void handleChangeRequestSubmit(event, reservation); }}>
+                    <div>
+                      <label htmlFor={`change-datetime-${reservation.id}`}>希望日時</label>
+                      <p className="form-hint">カレンダーから希望する日付と時間を選択してください。日時変更が不要な場合は空欄で構いません。</p>
+                      <input
+                        id={`change-datetime-${reservation.id}`}
+                        type="datetime-local"
+                        value={changeRequestDatetime}
+                        onChange={(event) => setChangeRequestDatetime(event.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`change-party-size-${reservation.id}`}>希望人数</label>
+                      <input
+                        id={`change-party-size-${reservation.id}`}
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        placeholder="例：2"
+                        value={changeRequestPartySize}
+                        onChange={(event) => setChangeRequestPartySize(event.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`change-note-${reservation.id}`}>ご要望はこちら</label>
+                      <p className="form-hint">ご希望や店舗への連絡事項があれば入力してください。</p>
+                      <textarea
+                        id={`change-note-${reservation.id}`}
+                        rows={4}
+                        placeholder="例：30分遅らせたい、子ども連れです、カウンター以外を希望します"
+                        value={changeRequestNote}
+                        onChange={(event) => setChangeRequestNote(event.target.value)}
+                      />
+                    </div>
+                    <div className="shop-form-actions">
+                      <button type="submit" className="button-primary" disabled={submittingChangeRequestId === reservation.id}>
+                        {submittingChangeRequestId === reservation.id ? '送信中...' : '変更依頼を送信'}
+                      </button>
+                      <button type="button" className="button-secondary" disabled={submittingChangeRequestId === reservation.id} onClick={closeChangeRequestForm}>
+                        閉じる
+                      </button>
+                    </div>
+                  </form>
                 ) : (
                   <>
                     <p className="form-hint">
@@ -315,9 +383,9 @@ export function ReservationCheckPage() {
                       type="button"
                       className="button-secondary"
                       disabled={submittingChangeRequestId === reservation.id}
-                      onClick={() => { void handleChangeRequest(reservation); }}
+                      onClick={() => { openChangeRequestForm(reservation); }}
                     >
-                      {submittingChangeRequestId === reservation.id ? '送信中...' : '予約変更依頼'}
+                      予約変更依頼
                     </button>
                   </>
                 )}
