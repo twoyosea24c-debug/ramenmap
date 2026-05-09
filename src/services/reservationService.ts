@@ -19,6 +19,10 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   cancelRequestedAt: row.cancel_requested_at,
   cancelRequestReason: row.cancel_request_reason,
   cancelCompletionEmailSentAt: row.cancel_completion_email_sent_at,
+  changeRequestedAt: row.change_requested_at,
+  changeRequestDatetime: row.change_request_datetime,
+  changeRequestPartySize: row.change_request_party_size,
+  changeRequestNote: row.change_request_note,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -32,6 +36,13 @@ type ReservationEmailPayload = {
   reservationDatetime: string;
   partySize: number;
   note?: string | null;
+};
+
+type ReservationChangeRequestInput = {
+  reservationId: Reservation['id'];
+  requestedDatetime: string | null;
+  requestedPartySize: number | null;
+  requestNote: string;
 };
 
 export const sendReservationConfirmationEmail = async (payload: ReservationEmailPayload): Promise<void> => {
@@ -95,7 +106,7 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
   });
   if (error) throw error;
   const now = new Date().toISOString();
-  return { id: crypto.randomUUID?.() ?? `${Date.now()}`, shopId: input.shopId, shopName: input.shopName, customerName: input.customerName, customerPhone: input.customerPhone, customerEmail: input.customerEmail, reservationDatetime: input.reservationDatetime, partySize: input.partySize, status, note, cancelReason: null, adminMemo: null, cancelRequestedAt: null, cancelRequestReason: null, cancelCompletionEmailSentAt: null, createdAt: now, updatedAt: now };
+  return { id: crypto.randomUUID?.() ?? `${Date.now()}`, shopId: input.shopId, shopName: input.shopName, customerName: input.customerName, customerPhone: input.customerPhone, customerEmail: input.customerEmail, reservationDatetime: input.reservationDatetime, partySize: input.partySize, status, note, cancelReason: null, adminMemo: null, cancelRequestedAt: null, cancelRequestReason: null, cancelCompletionEmailSentAt: null, changeRequestedAt: null, changeRequestDatetime: null, changeRequestPartySize: null, changeRequestNote: null, createdAt: now, updatedAt: now };
 };
 
 export const updateReservationStatus = async (reservationId: Reservation['id'], status: ReservationStatus): Promise<Reservation> => {
@@ -142,6 +153,24 @@ export const sendReservationCancelledEmail = async (reservation: Reservation): P
     .select('*')
     .single();
   if (updateError) throw updateError;
+  return mapReservationRow(data as SupabaseReservationRow);
+};
+
+export const requestReservationChange = async ({ reservationId, requestedDatetime, requestedPartySize, requestNote }: ReservationChangeRequestInput): Promise<Reservation> => {
+  if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .update({
+      change_requested_at: new Date().toISOString(),
+      change_request_datetime: requestedDatetime,
+      change_request_party_size: requestedPartySize,
+      change_request_note: requestNote,
+    })
+    .eq('id', reservationId)
+    .not('status', 'in', '(canceled,visited)')
+    .select('*')
+    .single();
+  if (error) throw error;
   return mapReservationRow(data as SupabaseReservationRow);
 };
 

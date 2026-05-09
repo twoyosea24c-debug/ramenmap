@@ -98,6 +98,10 @@ export type Reservation = {
   cancelRequestedAt: string | null;
   cancelRequestReason: string | null;
   cancelCompletionEmailSentAt: string | null;
+  changeRequestedAt: string | null;
+  changeRequestDatetime: string | null;
+  changeRequestPartySize: number | null;
+  changeRequestNote: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -130,6 +134,10 @@ export type SupabaseReservationRow = {
   cancel_requested_at: string | null;
   cancel_request_reason: string | null;
   cancel_completion_email_sent_at: string | null;
+  change_requested_at: string | null;
+  change_request_datetime: string | null;
+  change_request_party_size: number | null;
+  change_request_note: string | null;
   created_at: string;
   updated_at: string;
 };
