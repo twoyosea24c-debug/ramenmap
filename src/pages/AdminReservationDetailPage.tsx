@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import {
   cancelReservation,
   fetchReservationById,
@@ -7,7 +8,7 @@ import {
   updateReservationAdminMemo,
   updateReservationStatus,
 } from '../services/reservationService';
-import type { Reservation, ReservationStatus } from '../types';
+import type { Reservation, ReservationStatus, SupabaseReservationRow } from '../types';
 
 const STATUS_LABEL: Record<ReservationStatus, string> = {
   pending: '未確認',
@@ -35,6 +36,30 @@ const formatDateTime = (value: string) =>
     minute: '2-digit',
   });
 
+const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
+  id: row.id,
+  shopId: row.shop_id,
+  shopName: row.shop_name,
+  customerName: row.customer_name,
+  customerPhone: row.customer_phone,
+  customerEmail: row.customer_email,
+  reservationDatetime: row.reservation_datetime,
+  partySize: row.party_size,
+  status: row.status,
+  note: row.note,
+  cancelReason: row.cancel_reason,
+  adminMemo: row.admin_memo,
+  cancelRequestedAt: row.cancel_requested_at,
+  cancelRequestReason: row.cancel_request_reason,
+  cancelCompletionEmailSentAt: row.cancel_completion_email_sent_at,
+  changeRequestedAt: row.change_requested_at,
+  changeRequestDatetime: row.change_request_datetime,
+  changeRequestPartySize: row.change_request_party_size,
+  changeRequestNote: row.change_request_note,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
 export function AdminReservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -45,6 +70,7 @@ export function AdminReservationDetailPage() {
   const [memoDraft, setMemoDraft] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isSavingMemo, setIsSavingMemo] = useState(false);
+  const [isApplyingChangeRequest, setIsApplyingChangeRequest] = useState(false);
 
   useEffect(() => {
     const loadReservation = async () => {
@@ -94,6 +120,43 @@ export function AdminReservationDetailPage() {
       setStatusErrorMessage('ステータスの更新に失敗しました。Supabase設定を確認してください。');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleApplyChangeRequest = async () => {
+    if (!reservation || !reservation.changeRequestedAt || !supabase) return;
+    const confirmed = window.confirm('変更依頼の内容を現在の予約に反映しますか？');
+    if (!confirmed) return;
+
+    setStatusErrorMessage('');
+    setIsApplyingChangeRequest(true);
+    try {
+      const updatePayload: Partial<SupabaseReservationRow> = {
+        change_requested_at: null,
+        change_request_datetime: null,
+        change_request_party_size: null,
+        change_request_note: null,
+      };
+      if (reservation.changeRequestDatetime) updatePayload.reservation_datetime = reservation.changeRequestDatetime;
+      if (reservation.changeRequestPartySize) updatePayload.party_size = reservation.changeRequestPartySize;
+      if (reservation.status === 'pending') updatePayload.status = 'confirmed';
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .update(updatePayload)
+        .eq('id', reservation.id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      const updated = mapReservationRow(data as SupabaseReservationRow);
+      setReservation(updated);
+      setMemoDraft(updated.adminMemo ?? '');
+    } catch (error) {
+      console.error(error);
+      setStatusErrorMessage('変更依頼の反映に失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setIsApplyingChangeRequest(false);
     }
   };
 
@@ -163,6 +226,9 @@ export function AdminReservationDetailPage() {
           <p>希望人数：{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</p>
           <p>ご要望：{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '—'}</p>
           <p>依頼日時：{formatDateTime(reservation.changeRequestedAt)}</p>
+          <button type="button" className="button-primary" disabled={isApplyingChangeRequest} onClick={() => void handleApplyChangeRequest()}>
+            {isApplyingChangeRequest ? '変更反映中...' : 'この変更依頼を予約に反映'}
+          </button>
         </section>
       ) : null}
 
