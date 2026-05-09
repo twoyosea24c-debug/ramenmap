@@ -5,6 +5,7 @@ import {
   cancelReservation,
   fetchReservationById,
   sendReservationCancelledEmail,
+  sendReservationConfirmationEmail,
   updateReservationAdminMemo,
   updateReservationStatus,
 } from '../services/reservationService';
@@ -152,6 +153,21 @@ export function AdminReservationDetailPage() {
       const updated = mapReservationRow(data as SupabaseReservationRow);
       setReservation(updated);
       setMemoDraft(updated.adminMemo ?? '');
+      try {
+        await sendReservationConfirmationEmail({
+          reservationId: updated.id,
+          customerName: updated.customerName,
+          customerPhone: updated.customerPhone,
+          customerEmail: updated.customerEmail,
+          shopName: updated.shopName,
+          reservationDatetime: updated.reservationDatetime,
+          partySize: updated.partySize,
+          note: updated.note,
+          notificationType: 'changed',
+        });
+      } catch (notificationError) {
+        console.error(notificationError);
+      }
     } catch (error) {
       console.error(error);
       setStatusErrorMessage('変更依頼の反映に失敗しました。Supabase設定を確認してください。');
