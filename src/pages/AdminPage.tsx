@@ -67,12 +67,7 @@ export function AdminPage() {
       try {
         const data = await fetchReservations();
         setPendingReservationCount(data.filter((reservation) => reservation.status === 'pending').length);
-        setChangeRequestCount(
-          data.filter(
-            (reservation) =>
-              Boolean(reservation.changeRequestedAt) && reservation.status !== 'canceled' && reservation.status !== 'visited',
-          ).length,
-        );
+        setChangeRequestCount(data.filter((reservation) => Boolean(reservation.changeRequestedAt)).length);
       } catch {
         setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
       } finally {
