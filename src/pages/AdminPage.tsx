@@ -56,6 +56,7 @@ export function AdminPage() {
   const [historyVersion, setHistoryVersion] = useState(0);
   const operationLogs = useMemo(() => getAdminOperationLogs(), [historyVersion]);
   const [pendingReservationCount, setPendingReservationCount] = useState(0);
+  const [changeRequestCount, setChangeRequestCount] = useState(0);
   const [isReservationsLoading, setIsReservationsLoading] = useState(true);
   const [reservationsError, setReservationsError] = useState('');
 
@@ -66,6 +67,12 @@ export function AdminPage() {
       try {
         const data = await fetchReservations();
         setPendingReservationCount(data.filter((reservation) => reservation.status === 'pending').length);
+        setChangeRequestCount(
+          data.filter(
+            (reservation) =>
+              Boolean(reservation.changeRequestedAt) && reservation.status !== 'canceled' && reservation.status !== 'visited',
+          ).length,
+        );
       } catch {
         setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
       } finally {
@@ -147,9 +154,16 @@ export function AdminPage() {
         {!isReservationsLoading && !reservationsError ? (
           <>
             <p>未確認の予約：<strong>{pendingReservationCount}件</strong></p>
+            <p>予約変更依頼：<strong>{changeRequestCount}件</strong></p>
             {pendingReservationCount > 0 ? (
               <div className="admin-reservation-alert-card">
                 <p className="admin-reservation-alert">新しい予約があります。確認してください。</p>
+                <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+              </div>
+            ) : null}
+            {changeRequestCount > 0 ? (
+              <div className="admin-reservation-alert-card">
+                <p className="admin-reservation-alert">予約変更依頼があります。確認してください。</p>
                 <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
               </div>
             ) : null}
