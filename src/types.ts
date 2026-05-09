@@ -97,6 +97,7 @@ export type Reservation = {
   adminMemo: string | null;
   cancelRequestedAt: string | null;
   cancelRequestReason: string | null;
+  cancelCompletionEmailSentAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -128,6 +129,7 @@ export type SupabaseReservationRow = {
   admin_memo: string | null;
   cancel_requested_at: string | null;
   cancel_request_reason: string | null;
+  cancel_completion_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

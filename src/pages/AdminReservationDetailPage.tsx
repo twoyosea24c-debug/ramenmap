@@ -84,7 +84,8 @@ export function AdminReservationDetailPage() {
       setMemoDraft(updated.adminMemo ?? '');
       if (updated.status === 'canceled') {
         try {
-          await sendReservationCancelledEmail(updated);
+          const emailedReservation = await sendReservationCancelledEmail(updated);
+          setReservation(emailedReservation);
         } catch (notificationError) {
           console.error(notificationError);
         }
@@ -116,7 +117,9 @@ export function AdminReservationDetailPage() {
       setReservation(updated);
       setMemoDraft(updated.adminMemo ?? '');
       try {
-        await sendReservationCancelledEmail(updated);
+        const emailedReservation = await sendReservationCancelledEmail(updated);
+        setReservation(emailedReservation);
+        setMemoDraft(emailedReservation.adminMemo ?? '');
       } catch (notificationError) {
         console.error(notificationError);
       }
@@ -161,6 +164,13 @@ export function AdminReservationDetailPage() {
         </section>
       ) : null}
 
+      {!isLoading && !errorMessage && reservation?.status === 'canceled' ? (
+        <section className={reservation.cancelCompletionEmailSentAt ? 'checklist-item-ok' : 'checklist-item-attention'}>
+          <strong>{reservation.cancelCompletionEmailSentAt ? 'キャンセル完了メール送信済み' : 'キャンセル完了メール未送信'}</strong>
+          <p>{reservation.cancelCompletionEmailSentAt ? `送信日時：${formatDateTime(reservation.cancelCompletionEmailSentAt)}` : 'キャンセル完了メールはまだ送信記録がありません。'}</p>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && reservation ? (
         <div className="reservation-detail-grid">
           <article className="card reservation-detail-card">
@@ -176,6 +186,7 @@ export function AdminReservationDetailPage() {
               <div><dt>ステータス</dt><dd><span className={STATUS_CLASS_NAME[reservation.status]}>{STATUS_LABEL[reservation.status]}</span></dd></div>
               <div><dt>備考</dt><dd>{reservation.note?.trim() ? reservation.note : '—'}</dd></div>
               <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason?.trim() ? reservation.cancelReason : '—'}</dd></div>
+              <div><dt>キャンセル完了メール</dt><dd>{reservation.cancelCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.cancelCompletionEmailSentAt)}）` : '—'}</dd></div>
               <div><dt>キャンセル依頼日時</dt><dd>{reservation.cancelRequestedAt ? formatDateTime(reservation.cancelRequestedAt) : '—'}</dd></div>
               <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason?.trim() ? reservation.cancelRequestReason : '—'}</dd></div>
               <div><dt>申込日時</dt><dd>{formatDateTime(reservation.createdAt)}</dd></div>
