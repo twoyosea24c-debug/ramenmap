@@ -102,6 +102,7 @@ export type Reservation = {
   changeRequestDatetime: string | null;
   changeRequestPartySize: number | null;
   changeRequestNote: string | null;
+  changeCompletionEmailSentAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -138,6 +139,7 @@ export type SupabaseReservationRow = {
   change_request_datetime: string | null;
   change_request_party_size: number | null;
   change_request_note: string | null;
+  change_completion_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
