@@ -164,6 +164,25 @@
   }
 }
 
+.reservation-row-cancelled-processed {
+  background: #fff1f2;
+}
+
+.reservation-cancelled-processed-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.35rem;
+  border: 1px solid #fda4af;
+  background: #ffe4e6;
+  color: #9f1239;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 @media (max-width: 420px) {
   .nav-list {
     grid-template-columns: 1fr;
