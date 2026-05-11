@@ -310,138 +310,153 @@ export function ReservationCheckPage() {
 
       {sortedReservations.map((reservation) => (
         <article key={reservation.id} className="card reservation-result-card" aria-label="予約確認結果">
-          <h2>{reservation.shopName}</h2>
-          <dl className="detail-list reservation-result-list">
-            <div><dt>予約者名</dt><dd>{reservation.customerName}</dd></div>
-            <div><dt>予約日時</dt><dd>{formatReservationDatetime(reservation.reservationDatetime)}</dd></div>
-            <div><dt>人数</dt><dd>{reservation.partySize}名</dd></div>
+          <div className="page-header">
             <div>
-              <dt>ステータス</dt>
-              <dd>
-                <span className={`reservation-status ${RESERVATION_STATUS_CLASS_NAMES[reservation.status]}`}>
-                  {RESERVATION_STATUS_LABELS[reservation.status]}
-                </span>
-              </dd>
+              <h2>{reservation.shopName}</h2>
+              <p className="form-hint">予約ID：{reservation.id}</p>
             </div>
-            <div><dt>備考</dt><dd>{reservation.note || '—'}</dd></div>
-            <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason || '—'}</dd></div>
-            <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
-            <div><dt>キャンセル依頼</dt><dd>{reservation.cancelRequestedAt ? 'キャンセル依頼済み' : '—'}</dd></div>
-            {reservation.cancelRequestedAt ? <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason || '—'}</dd></div> : null}
-            <div><dt>予約変更依頼</dt><dd>{reservation.changeRequestedAt ? '変更依頼済み' : '—'}</dd></div>
-            {reservation.changeRequestedAt ? <div><dt>希望日時</dt><dd>{reservation.changeRequestDatetime ? formatReservationDatetime(reservation.changeRequestDatetime) : '—'}</dd></div> : null}
-            {reservation.changeRequestedAt ? <div><dt>希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div> : null}
-            {reservation.changeRequestedAt ? <div><dt>変更依頼内容</dt><dd>{reservation.changeRequestNote || '—'}</dd></div> : null}
-          </dl>
-          <div className="reservation-check-actions">
-            {reservation.status === 'canceled' ? (
-              <p
-                className="checklist-item-attention"
-                style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
-              >
-                この予約はキャンセル済みです。
-              </p>
-            ) : reservation.status === 'visited' ? (
-              <p
-                className="checklist-item-ok"
-                style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
-              >
-                この予約は来店済みです。
-              </p>
-            ) : (
-              <>
-                {reservation.changeRequestedAt ? (
-                  <p
-                    className="checklist-item-attention"
-                    style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
-                  >
-                    変更依頼を受け付けました。店舗からの確認連絡をお待ちください。
-                  </p>
-                ) : editingChangeRequestId === reservation.id ? (
-                  <form className="shop-form" onSubmit={(event) => { void handleChangeRequestSubmit(event, reservation); }}>
-                    <div>
-                      <label htmlFor={`change-datetime-${reservation.id}`}>希望日時</label>
-                      <p className="form-hint">カレンダーから希望する日付と時間を選択してください。日時変更が不要な場合は空欄で構いません。</p>
-                      <input
-                        id={`change-datetime-${reservation.id}`}
-                        type="datetime-local"
-                        value={changeRequestDatetime}
-                        onChange={(event) => setChangeRequestDatetime(event.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`change-party-size-${reservation.id}`}>希望人数</label>
-                      <input
-                        id={`change-party-size-${reservation.id}`}
-                        type="number"
-                        min="1"
-                        inputMode="numeric"
-                        placeholder="例：2"
-                        value={changeRequestPartySize}
-                        onChange={(event) => setChangeRequestPartySize(event.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`change-note-${reservation.id}`}>ご要望はこちら</label>
-                      <p className="form-hint">ご希望や店舗への連絡事項があれば入力してください。</p>
-                      <textarea
-                        id={`change-note-${reservation.id}`}
-                        rows={4}
-                        placeholder="例：30分遅らせたい、子ども連れです、カウンター以外を希望します"
-                        value={changeRequestNote}
-                        onChange={(event) => setChangeRequestNote(event.target.value)}
-                      />
-                    </div>
-                    <div className="shop-form-actions">
-                      <button type="submit" className="button-primary" disabled={submittingChangeRequestId === reservation.id}>
-                        {submittingChangeRequestId === reservation.id ? '送信中...' : '変更依頼を送信'}
-                      </button>
-                      <button type="button" className="button-secondary" disabled={submittingChangeRequestId === reservation.id} onClick={closeChangeRequestForm}>
-                        閉じる
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <>
-                    <p className="form-hint">
-                      予約日時や人数の変更をご希望の場合は、店舗へ変更依頼を送信できます。
-                    </p>
-                    <button
-                      type="button"
-                      className="button-secondary"
-                      disabled={submittingChangeRequestId === reservation.id}
-                      onClick={() => { openChangeRequestForm(reservation); }}
-                    >
-                      予約変更依頼
-                    </button>
-                  </>
-                )}
-                {reservation.cancelRequestedAt ? (
-                  <p
-                    className="checklist-item-attention"
-                    style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
-                  >
-                    キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。
-                  </p>
-                ) : (
-                  <>
-                    <p className="form-hint">
-                      キャンセルをご希望の場合は、店舗へキャンセル依頼を送信できます。
-                      店舗確認後にキャンセル処理が行われます。
-                    </p>
-                    <button
-                      type="button"
-                      className="button-secondary"
-                      disabled={submittingCancelRequestId === reservation.id}
-                      onClick={() => { void handleCancelRequest(reservation); }}
-                    >
-                      {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
-                    </button>
-                  </>
-                )}
-              </>
-            )}
+            <span className={`reservation-status ${RESERVATION_STATUS_CLASS_NAMES[reservation.status]}`}>
+              {RESERVATION_STATUS_LABELS[reservation.status]}
+            </span>
           </div>
+
+          <section className="checklist-item-ok" aria-label="予約内容">
+            <strong>予約内容</strong>
+            <dl className="detail-list reservation-result-list">
+              <div><dt>予約者名</dt><dd>{reservation.customerName}</dd></div>
+              <div><dt>予約日時</dt><dd>{formatReservationDatetime(reservation.reservationDatetime)}</dd></div>
+              <div><dt>人数</dt><dd>{reservation.partySize}名</dd></div>
+              <div><dt>備考</dt><dd>{reservation.note || '—'}</dd></div>
+              <div><dt>申込日時</dt><dd>{formatReservationDatetime(reservation.createdAt)}</dd></div>
+            </dl>
+          </section>
+
+          <section className="card" aria-label="現在の状態" style={{ padding: '1rem' }}>
+            <strong>現在の状態</strong>
+            <dl className="detail-list reservation-result-list">
+              <div><dt>ステータス</dt><dd>{RESERVATION_STATUS_LABELS[reservation.status]}</dd></div>
+              <div><dt>予約変更依頼</dt><dd>{reservation.changeRequestedAt ? '変更依頼済み' : '—'}</dd></div>
+              {reservation.changeRequestedAt ? <div><dt>希望日時</dt><dd>{reservation.changeRequestDatetime ? formatReservationDatetime(reservation.changeRequestDatetime) : '—'}</dd></div> : null}
+              {reservation.changeRequestedAt ? <div><dt>希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div> : null}
+              {reservation.changeRequestedAt ? <div><dt>変更依頼内容</dt><dd>{reservation.changeRequestNote || '—'}</dd></div> : null}
+              <div><dt>キャンセル依頼</dt><dd>{reservation.cancelRequestedAt ? 'キャンセル依頼済み' : '—'}</dd></div>
+              {reservation.cancelRequestedAt ? <div><dt>キャンセル依頼理由</dt><dd>{reservation.cancelRequestReason || '—'}</dd></div> : null}
+              <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason || '—'}</dd></div>
+            </dl>
+          </section>
+
+          <section className="card" aria-label="変更・キャンセル操作" style={{ padding: '1rem' }}>
+            <strong>変更・キャンセル操作</strong>
+            <div className="reservation-check-actions">
+              {reservation.status === 'canceled' ? (
+                <p
+                  className="checklist-item-attention"
+                  style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                >
+                  この予約はキャンセル済みです。
+                </p>
+              ) : reservation.status === 'visited' ? (
+                <p
+                  className="checklist-item-ok"
+                  style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                >
+                  この予約は来店済みです。
+                </p>
+              ) : (
+                <>
+                  {reservation.changeRequestedAt ? (
+                    <p
+                      className="checklist-item-attention"
+                      style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                    >
+                      変更依頼を受け付けました。店舗からの確認連絡をお待ちください。
+                    </p>
+                  ) : editingChangeRequestId === reservation.id ? (
+                    <form className="shop-form" onSubmit={(event) => { void handleChangeRequestSubmit(event, reservation); }}>
+                      <div>
+                        <label htmlFor={`change-datetime-${reservation.id}`}>希望日時</label>
+                        <p className="form-hint">カレンダーから希望する日付と時間を選択してください。日時変更が不要な場合は空欄で構いません。</p>
+                        <input
+                          id={`change-datetime-${reservation.id}`}
+                          type="datetime-local"
+                          value={changeRequestDatetime}
+                          onChange={(event) => setChangeRequestDatetime(event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`change-party-size-${reservation.id}`}>希望人数</label>
+                        <input
+                          id={`change-party-size-${reservation.id}`}
+                          type="number"
+                          min="1"
+                          inputMode="numeric"
+                          placeholder="例：2"
+                          value={changeRequestPartySize}
+                          onChange={(event) => setChangeRequestPartySize(event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`change-note-${reservation.id}`}>ご要望はこちら</label>
+                        <p className="form-hint">ご希望や店舗への連絡事項があれば入力してください。</p>
+                        <textarea
+                          id={`change-note-${reservation.id}`}
+                          rows={4}
+                          placeholder="例：30分遅らせたい、子ども連れです、カウンター以外を希望します"
+                          value={changeRequestNote}
+                          onChange={(event) => setChangeRequestNote(event.target.value)}
+                        />
+                      </div>
+                      <div className="shop-form-actions">
+                        <button type="submit" className="button-primary" disabled={submittingChangeRequestId === reservation.id}>
+                          {submittingChangeRequestId === reservation.id ? '送信中...' : '変更依頼を送信'}
+                        </button>
+                        <button type="button" className="button-secondary" disabled={submittingChangeRequestId === reservation.id} onClick={closeChangeRequestForm}>
+                          閉じる
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <p className="form-hint">
+                        予約日時や人数の変更をご希望の場合は、店舗へ変更依頼を送信できます。
+                      </p>
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        disabled={submittingChangeRequestId === reservation.id}
+                        onClick={() => { openChangeRequestForm(reservation); }}
+                      >
+                        予約変更依頼
+                      </button>
+                    </>
+                  )}
+                  {reservation.cancelRequestedAt ? (
+                    <p
+                      className="checklist-item-attention"
+                      style={{ borderWidth: 2, fontSize: '1rem', fontWeight: 800, marginTop: '0.8rem', padding: '0.85rem' }}
+                    >
+                      キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。
+                    </p>
+                  ) : (
+                    <>
+                      <p className="form-hint">
+                        キャンセルをご希望の場合は、店舗へキャンセル依頼を送信できます。
+                        店舗確認後にキャンセル処理が行われます。
+                      </p>
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        disabled={submittingCancelRequestId === reservation.id}
+                        onClick={() => { void handleCancelRequest(reservation); }}
+                      >
+                        {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
         </article>
       ))}
     </section>
