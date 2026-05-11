@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Reservation, ReservationStatus } from '../types';
 import {
@@ -63,6 +63,7 @@ export function ReservationCheckPage() {
   const [changeRequestDatetime, setChangeRequestDatetime] = useState('');
   const [changeRequestPartySize, setChangeRequestPartySize] = useState('');
   const [changeRequestNote, setChangeRequestNote] = useState('');
+  const resultsGuideRef = useRef<HTMLElement | null>(null);
 
   const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
 
@@ -81,6 +82,11 @@ export function ReservationCheckPage() {
     setChangeRequestPartySize('');
     setChangeRequestNote('');
   };
+
+  useEffect(() => {
+    if (reservations.length === 0) return;
+    resultsGuideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [reservations.length]);
 
   const handleChangeRequestSubmit = async (event: FormEvent<HTMLFormElement>, reservation: Reservation) => {
     event.preventDefault();
@@ -295,7 +301,7 @@ export function ReservationCheckPage() {
       </article>
 
       {sortedReservations.length > 0 ? (
-        <article className="card reservation-result-card" aria-label="予約確認後の案内">
+        <article ref={resultsGuideRef} className="card reservation-result-card" aria-label="予約確認後の案内">
           <h2>予約情報を確認できました</h2>
           <p className="form-hint">下の予約カードから予約内容を確認できます。</p>
           <p className="form-hint">予約日時や人数を変更したい場合は「予約変更依頼」、取り消したい場合は「キャンセル依頼」を押してください。</p>
