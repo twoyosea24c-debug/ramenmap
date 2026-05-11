@@ -5,6 +5,8 @@ const STATUS_LABELS: Record<string, string> = {
   visited: '来店済み',
 };
 
+const DEFAULT_ADMIN_CANCEL_REASON = '管理画面でキャンセル処理';
+
 const getStatusLabel = (value: string) => STATUS_LABELS[value] ?? value;
 
 const isAdminReservationPage = () => window.location.pathname.startsWith('/admin/reservations');
@@ -17,7 +19,22 @@ const rememberPreviousSelectValue = (target: EventTarget | null) => {
   target.dataset.previousValue = target.value;
 };
 
+const setupAdminCancelReasonPromptSkip = () => {
+  const originalPrompt = window.prompt.bind(window);
+
+  window.prompt = (message?: string, defaultValue?: string) => {
+    const promptMessage = String(message ?? '');
+    if (isAdminReservationPage() && promptMessage.includes('キャンセル理由を入力してください')) {
+      return defaultValue?.trim() || DEFAULT_ADMIN_CANCEL_REASON;
+    }
+
+    return originalPrompt(message, defaultValue);
+  };
+};
+
 export const setupAdminStatusConfirmations = () => {
+  setupAdminCancelReasonPromptSkip();
+
   document.addEventListener(
     'focusin',
     (event) => {
