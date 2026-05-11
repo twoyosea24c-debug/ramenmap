@@ -1,0 +1,182 @@
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+
+  .container {
+    width: min(100% - 1rem, 1080px);
+  }
+
+  .main-content {
+    padding: 0.8rem 0 1.5rem;
+  }
+
+  .card,
+  .detail-card,
+  .reservation-check-card,
+  .reservation-result-card {
+    border-radius: 14px;
+    padding: 0.9rem;
+  }
+
+  .detail-wrapper {
+    gap: 0.8rem;
+  }
+
+  .detail-wrapper h1 {
+    font-size: 1.35rem;
+    line-height: 1.35;
+  }
+
+  .page-header {
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .page-header h1,
+  .page-header h2,
+  .page-header h3 {
+    overflow-wrap: anywhere;
+  }
+
+  .button-primary,
+  .button-secondary,
+  .button-danger,
+  .favorite-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.75rem 0.9rem;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .shop-form,
+  .reservation-check-wrapper .shop-form {
+    max-width: none;
+    gap: 0.8rem;
+  }
+
+  .shop-form input,
+  .shop-form textarea,
+  .shop-form select,
+  .reservation-filter-grid input,
+  .reservation-filter-grid select,
+  .reservation-detail-actions select,
+  .reservation-detail-actions textarea {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.7rem;
+  }
+
+  .shop-form textarea,
+  .reservation-detail-actions textarea {
+    min-height: 110px;
+  }
+
+  .shop-form-actions,
+  .reservation-row-actions,
+  .reservation-memo-actions,
+  .page-header-actions,
+  .hero-actions,
+  .detail-actions,
+  .shop-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .reservation-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-bulk-action-bar {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-status-actions {
+    justify-items: start;
+  }
+
+  .reservation-status {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .reservation-result-card .page-header {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-result-list,
+  .reservation-detail-list,
+  .detail-list {
+    gap: 0.65rem;
+  }
+
+  .reservation-result-list div,
+  .reservation-detail-list div,
+  .detail-list div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .reservation-result-list dd,
+  .reservation-detail-list dd,
+  .detail-list dd {
+    overflow-wrap: anywhere;
+  }
+
+  .checklist-item-ok,
+  .checklist-item-attention {
+    padding: 0.8rem;
+  }
+
+  .form-hint {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .header {
+    position: static;
+  }
+
+  .header-inner {
+    gap: 0.55rem;
+  }
+
+  .nav-list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .nav-link {
+    display: block;
+    text-align: center;
+    padding: 0.6rem 0.5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-list {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-wrapper h1 {
+    font-size: 1.25rem;
+  }
+
+  .card,
+  .detail-card,
+  .reservation-check-card,
+  .reservation-result-card {
+    padding: 0.8rem;
+  }
+}
