@@ -7,11 +7,13 @@ import { ShopsProvider } from './context/ShopsContext';
 import { AuthProvider } from './context/AuthContext';
 import { setupAdminStatusConfirmations } from './adminStatusConfirm';
 import { setupAdminCancelledDisplay } from './adminCancelledDisplay';
+import { setupAdminReservationGuide } from './adminReservationGuide';
 import './styles.css';
 import './mobile.css';
 
 setupAdminStatusConfirmations();
 setupAdminCancelledDisplay();
+setupAdminReservationGuide();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
