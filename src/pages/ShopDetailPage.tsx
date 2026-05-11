@@ -32,6 +32,13 @@ const initialReservationFormData: ReservationFormData = {
   note: '',
 };
 
+type CompletedReservationInfo = {
+  customerEmail: string;
+  reservationDatetime: string;
+  partySize: number;
+  shopName: string;
+};
+
 const toHalfWidthNumber = (value: string) =>
   value.replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0));
 const normalizePhoneNumber = (value: string) => toHalfWidthNumber(value).replace(/[ー−―‐]/g, '-').replace(/[^0-9+]/g, '');
@@ -52,6 +59,7 @@ export function ShopDetailPage() {
   const [reservationSuccessMessage, setReservationSuccessMessage] = useState<string | null>(null);
   const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
   const [reservationValidationMessages, setReservationValidationMessages] = useState<string[]>([]);
+  const [completedReservationInfo, setCompletedReservationInfo] = useState<CompletedReservationInfo | null>(null);
   const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
   const [isReservationCompleted, setIsReservationCompleted] = useState(false);
   const [isMapLoadFailed, setIsMapLoadFailed] = useState(false);
@@ -116,6 +124,9 @@ export function ShopDetailPage() {
     }
     if (reservationValidationMessages.length > 0) {
       setReservationValidationMessages([]);
+    }
+    if (completedReservationInfo) {
+      setCompletedReservationInfo(null);
     }
     if (isReservationCompleted) {
       setIsReservationCompleted(false);
@@ -201,6 +212,12 @@ export function ShopDetailPage() {
           ? '予約が完了しました。確認メールを送信しました。'
           : '予約は完了しましたが、確認メールの送信に失敗しました。',
       );
+      setCompletedReservationInfo({
+        customerEmail,
+        reservationDatetime,
+        partySize,
+        shopName: shop.name,
+      });
       setIsReservationCompleted(true);
       setReservationForm(initialReservationFormData);
     } catch (error) {
@@ -287,6 +304,20 @@ export function ShopDetailPage() {
         <section className="shop-reservation-section" aria-label="予約フォーム">
           <h2>予約フォーム</h2>
           {reservationSuccessMessage ? <p className="status-ok">{reservationSuccessMessage}</p> : null}
+          {completedReservationInfo ? (
+            <section className="checklist-item-ok" aria-label="予約完了後の案内">
+              <strong>予約内容の確認・変更・キャンセルについて</strong>
+              <p>予約確認ページから、予約内容の確認、予約変更依頼、キャンセル依頼ができます。</p>
+              <p>予約時に入力したメールアドレス宛に認証コードを送信して確認します。</p>
+              <p>予約店舗：{completedReservationInfo.shopName}</p>
+              <p>予約日時：{new Date(completedReservationInfo.reservationDatetime).toLocaleString('ja-JP')}</p>
+              <p>人数：{completedReservationInfo.partySize}名</p>
+              <p>予約メール：{completedReservationInfo.customerEmail}</p>
+              <div className="shop-form-actions">
+                <Link to="/reservation/check" className="button-primary">予約確認ページを開く</Link>
+              </div>
+            </section>
+          ) : null}
           {reservationErrorMessage ? <p className="status-error">{reservationErrorMessage}</p> : null}
           {reservationValidationMessages.length > 0 ? (
             <section className="checklist-item-attention" aria-label="入力内容の確認">
