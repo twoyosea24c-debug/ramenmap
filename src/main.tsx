@@ -6,6 +6,7 @@ import { FavoritesProvider } from './context/FavoritesContext';
 import { ShopsProvider } from './context/ShopsContext';
 import { AuthProvider } from './context/AuthContext';
 import './styles.css';
+import './mobile.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
