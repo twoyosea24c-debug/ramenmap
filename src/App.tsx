@@ -15,7 +15,7 @@ import { AdminPage } from './pages/AdminPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { AdminChecklistPage } from './pages/AdminChecklistPage';
-import { AdminReservationsPage } from './pages/AdminReservationsPage';
+import { AdminReservationsEnhancedPage } from './pages/AdminReservationsEnhancedPage';
 import { AdminReservationDetailPage } from './pages/AdminReservationDetailPage';
 import { ReservationCheckPage } from './pages/ReservationCheckPage';
 
@@ -50,7 +50,7 @@ function App() {
           path="admin/reservations"
           element={
             <RequireAdmin>
-              <AdminReservationsPage />
+              <AdminReservationsEnhancedPage />
             </RequireAdmin>
           }
         />
