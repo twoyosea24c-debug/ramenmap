@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  bulkUpdateReservationStatus,
   cancelReservation,
   fetchReservations,
   sendReservationCancelledEmail,
@@ -103,6 +104,9 @@ export function AdminReservationsEnhancedPage() {
   const [editingMemoReservationId, setEditingMemoReservationId] = useState<string | null>(null);
   const [memoDraft, setMemoDraft] = useState('');
   const [savingMemoReservationIds, setSavingMemoReservationIds] = useState<Record<string, boolean>>({});
+  const [selectedReservationIds, setSelectedReservationIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<ReservationStatus>('confirmed');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   useEffect(() => {
     const loadReservations = async () => {
@@ -199,6 +203,14 @@ export function AdminReservationsEnhancedPage() {
     };
   }, [reservations]);
 
+  const allVisibleSelected =
+    filteredReservations.length > 0 && filteredReservations.every((reservation) => selectedReservationIds.includes(reservation.id));
+
+  useEffect(() => {
+    const visibleReservationIds = new Set(filteredReservations.map((reservation) => reservation.id));
+    setSelectedReservationIds((prev) => prev.filter((id) => visibleReservationIds.has(id)));
+  }, [filteredReservations]);
+
   const commitReservationStatusChange = async (reservationId: string, nextStatus: ReservationStatus) => {
     setStatusErrorMessage('');
     setUpdatingReservationIds((prev) => ({ ...prev, [reservationId]: true }));
@@ -217,6 +229,7 @@ export function AdminReservationsEnhancedPage() {
   };
 
   const handleStatusChange = async (reservation: Reservation, nextStatus: ReservationStatus) => {
+    if (isBulkUpdating) return;
     if (nextStatus === reservation.status) return;
     if (nextStatus === 'canceled') {
       const confirmed = window.confirm('この予約をキャンセルしますか？');
@@ -226,6 +239,7 @@ export function AdminReservationsEnhancedPage() {
   };
 
   const handleCancelReservation = async (reservation: Reservation) => {
+    if (isBulkUpdating) return;
     const suggested = `キャンセル理由を入力してください。\n候補: ${CANCEL_REASON_OPTIONS.join(' / ')}`;
     const input = window.prompt(suggested, reservation.cancelReason ?? '');
     if (input === null) return;
@@ -278,6 +292,58 @@ export function AdminReservationsEnhancedPage() {
         delete next[reservationId];
         return next;
       });
+    }
+  };
+
+  const toggleReservationSelection = (reservationId: string) => {
+    if (isBulkUpdating) return;
+    setSelectedReservationIds((prev) =>
+      prev.includes(reservationId) ? prev.filter((id) => id !== reservationId) : [...prev, reservationId],
+    );
+  };
+
+  const toggleSelectAllVisibleReservations = () => {
+    if (isBulkUpdating) return;
+    if (allVisibleSelected) {
+      setSelectedReservationIds((prev) => prev.filter((id) => !filteredReservations.some((reservation) => reservation.id === id)));
+      return;
+    }
+    setSelectedReservationIds((prev) => {
+      const visibleIds = filteredReservations.map((reservation) => reservation.id);
+      return Array.from(new Set([...prev, ...visibleIds]));
+    });
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (selectedReservationIds.length === 0) return;
+    let cancelReason: string | undefined;
+    if (bulkStatus === 'canceled') {
+      const confirmed = window.confirm('選択した予約をすべてキャンセルしますか？');
+      if (!confirmed) return;
+      const input = window.prompt('キャンセル理由を入力してください', '');
+      if (input === null) return;
+      const trimmedReason = input.trim();
+      if (trimmedReason.length === 0) {
+        setStatusErrorMessage('キャンセル理由を入力してください。');
+        return;
+      }
+      cancelReason = trimmedReason;
+    }
+
+    setStatusErrorMessage('');
+    setIsBulkUpdating(true);
+    try {
+      const updatedReservations = await bulkUpdateReservationStatus(selectedReservationIds, bulkStatus, cancelReason);
+      const updatedById = new Map(updatedReservations.map((reservation) => [reservation.id, reservation]));
+      setReservations((prev) => prev.map((reservation) => updatedById.get(reservation.id) ?? reservation));
+      updatedReservations.filter((reservation) => reservation.status === 'canceled').forEach((reservation) => {
+        void sendReservationCancelledEmail(reservation).catch((notificationError) => console.error(notificationError));
+      });
+      setSelectedReservationIds([]);
+    } catch {
+      setStatusErrorMessage('一括ステータス変更に失敗しました。Supabase設定を確認してください。');
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -386,6 +452,23 @@ export function AdminReservationsEnhancedPage() {
       {!isLoading && !errorMessage && memoErrorMessage ? <p className="result-count reservation-update-error">{memoErrorMessage}</p> : null}
       {!isLoading && !errorMessage ? <p className="result-count">表示件数: {filteredReservations.length}件</p> : null}
 
+      {!isLoading && !errorMessage && selectedReservationIds.length > 0 ? (
+        <section className="reservation-bulk-action-bar" aria-label="予約の一括操作">
+          <p>{selectedReservationIds.length}件選択中</p>
+          <select
+            aria-label="一括変更ステータス"
+            value={bulkStatus}
+            disabled={isBulkUpdating}
+            onChange={(event) => setBulkStatus(event.target.value as ReservationStatus)}
+          >
+            {UPDATE_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{STATUS_LABEL[status]}</option>)}
+          </select>
+          <button type="button" className="button-primary" disabled={isBulkUpdating} onClick={() => void handleBulkStatusUpdate()}>
+            {isBulkUpdating ? '一括変更中...' : '一括変更'}
+          </button>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && filteredReservations.length === 0 ? <p className="empty-message">条件に一致する予約はありません。</p> : null}
 
       {!isLoading && !errorMessage && filteredReservations.length > 0 ? (
@@ -393,6 +476,7 @@ export function AdminReservationsEnhancedPage() {
           <table>
             <thead>
               <tr>
+                <th><input type="checkbox" aria-label="表示中の予約をすべて選択" checked={allVisibleSelected} disabled={isBulkUpdating} onChange={toggleSelectAllVisibleReservations} /></th>
                 <th>予約ID</th><th>店舗名</th><th>予約者名</th><th>電話番号</th><th>メールアドレス</th>
                 <th>予約日時</th><th>人数</th><th>ステータス</th><th>操作</th><th>キャンセル理由</th><th>キャンセル依頼</th><th>予約変更依頼</th><th>変更履歴</th><th>管理メモ</th><th>備考</th><th>申込日時</th>
               </tr>
@@ -405,6 +489,7 @@ export function AdminReservationsEnhancedPage() {
 
                 return (
                   <tr key={reservation.id} className={getReservationRowClassName(reservation)}>
+                    <td><input type="checkbox" aria-label={`予約ID ${reservation.id} を選択`} checked={selectedReservationIds.includes(reservation.id)} disabled={isBulkUpdating} onChange={() => toggleReservationSelection(reservation.id)} /></td>
                     <td>{reservation.id}</td>
                     <td>{reservation.shopName}</td>
                     <td>{reservation.customerName}</td>
@@ -421,7 +506,7 @@ export function AdminReservationsEnhancedPage() {
                         <select
                           aria-label={`予約ID ${reservation.id} のステータス変更`}
                           value={reservation.status}
-                          disabled={isUpdating}
+                          disabled={isUpdating || isBulkUpdating}
                           onChange={(event) => { void handleStatusChange(reservation, event.target.value as ReservationStatus); }}
                         >
                           {UPDATE_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{STATUS_LABEL[status]}</option>)}
@@ -435,7 +520,7 @@ export function AdminReservationsEnhancedPage() {
                         {reservation.status === 'canceled' ? (
                           <span className="reservation-action-muted">キャンセル済み</span>
                         ) : (
-                          <button type="button" className="button-danger reservation-cancel-button" disabled={isUpdating} onClick={() => { void handleCancelReservation(reservation); }}>キャンセル</button>
+                          <button type="button" className="button-danger reservation-cancel-button" disabled={isUpdating || isBulkUpdating} onClick={() => { void handleCancelReservation(reservation); }}>キャンセル</button>
                         )}
                       </div>
                     </td>
