@@ -108,42 +108,28 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
   if (!supabase) throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   const status = input.status ?? 'pending';
   const note = input.note ?? null;
-  const { error } = await supabase.from(RESERVATIONS_TABLE).insert({
-    shop_id: input.shopId, shop_name: input.shopName, customer_name: input.customerName, customer_phone: input.customerPhone,
-    customer_email: input.customerEmail, reservation_datetime: input.reservationDatetime, party_size: input.partySize, status, note,
-  });
-  if (error) throw error;
-  const now = new Date().toISOString();
-  return {
-    id: crypto.randomUUID?.() ?? `${Date.now()}`,
-    shopId: input.shopId,
-    shopName: input.shopName,
-    customerName: input.customerName,
-    customerPhone: input.customerPhone,
-    customerEmail: input.customerEmail,
-    reservationDatetime: input.reservationDatetime,
-    partySize: input.partySize,
-    status,
-    note,
-    cancelReason: null,
-    adminMemo: null,
-    cancelRequestedAt: null,
-    cancelRequestReason: null,
-    cancelCompletionEmailSentAt: null,
-    changeRequestedAt: null,
-    changeRequestDatetime: null,
-    changeRequestPartySize: null,
-    changeRequestNote: null,
-    changeCompletionEmailSentAt: null,
-    changeAppliedAt: null,
-    changeBeforeDatetime: null,
-    changeBeforePartySize: null,
-    changeAfterDatetime: null,
-    changeAfterPartySize: null,
-    changeAppliedNote: null,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const { data, error } = await supabase
+    .from(RESERVATIONS_TABLE)
+    .insert({
+      shop_id: input.shopId,
+      shop_name: input.shopName,
+      customer_name: input.customerName,
+      customer_phone: input.customerPhone,
+      customer_email: input.customerEmail,
+      reservation_datetime: input.reservationDatetime,
+      party_size: input.partySize,
+      status,
+      note,
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    const detail = [error.message, error.details, error.hint].filter(Boolean).join(' / ');
+    throw new Error(`予約登録に失敗しました。Supabase側の予約保存設定を確認してください。${detail ? ` 詳細: ${detail}` : ''}`);
+  }
+
+  return mapReservationRow(data as SupabaseReservationRow);
 };
 
 export const updateReservationStatus = async (reservationId: Reservation['id'], status: ReservationStatus): Promise<Reservation> => {
