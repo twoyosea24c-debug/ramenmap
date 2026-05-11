@@ -240,6 +240,20 @@ export function AdminReservationDetailPage() {
         <Link to="/admin/reservations" className="button-secondary">予約一覧へ戻る</Link>
       </div>
 
+      {!isLoading && !errorMessage && reservation ? (
+        <section className="admin-reservation-guide-panel" aria-label="予約詳細の操作案内">
+          <strong>この予約で確認すること</strong>
+          <ol>
+            {reservation.changeRequestedAt ? <li>予約変更依頼があります。希望日時・希望人数・ご要望を確認し、問題なければ「この変更依頼を予約に反映」を押してください。</li> : null}
+            {reservation.cancelRequestedAt && reservation.status !== 'canceled' ? <li>キャンセル依頼があります。依頼理由を確認し、処理する場合はステータスをキャンセルに変更してください。</li> : null}
+            {reservation.status === 'pending' ? <li>未確認の予約です。内容を確認して、来店可能であれば「確認済み」に変更してください。</li> : null}
+            {reservation.status === 'canceled' ? <li>この予約はキャンセル済みです。キャンセル完了メールの送信状況を確認してください。</li> : null}
+            {reservation.status === 'visited' ? <li>この予約は来店済みです。必要に応じて管理メモを残してください。</li> : null}
+            <li>対応内容や店舗側のメモは「管理メモ」に記録してください。</li>
+          </ol>
+        </section>
+      ) : null}
+
       {isLoading ? <p className="result-count">予約情報を読み込み中...</p> : null}
       {!isLoading && errorMessage ? <p className="result-count">{errorMessage}</p> : null}
       {!isLoading && !errorMessage && !reservation ? <p className="result-count">予約が見つかりません。</p> : null}
