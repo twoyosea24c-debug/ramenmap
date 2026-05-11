@@ -32,6 +32,11 @@ const initialReservationFormData: ReservationFormData = {
   note: '',
 };
 
+const normalizePhoneNumber = (value: string) => value.replace(/[^0-9+]/g, '');
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPhoneNumber = (phone: string) => /^0\d{9,10}$/.test(phone.replace(/-/g, '')) || /^\+\d{8,15}$/.test(phone);
+const isFutureReservationDateTime = (date: string, time: string) => new Date(`${date}T${time}`).getTime() > Date.now();
+
 export function ShopDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,6 +48,7 @@ export function ShopDetailPage() {
   const [reservationForm, setReservationForm] = useState<ReservationFormData>(initialReservationFormData);
   const [reservationSuccessMessage, setReservationSuccessMessage] = useState<string | null>(null);
   const [reservationErrorMessage, setReservationErrorMessage] = useState<string | null>(null);
+  const [reservationValidationMessages, setReservationValidationMessages] = useState<string[]>([]);
   const [isSubmittingReservation, setIsSubmittingReservation] = useState(false);
   const [isReservationCompleted, setIsReservationCompleted] = useState(false);
   const [isMapLoadFailed, setIsMapLoadFailed] = useState(false);
@@ -98,21 +104,28 @@ export function ShopDetailPage() {
     navigate('/shops');
   };
 
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
   const handleReservationChange = (key: keyof ReservationFormData, value: string) => {
     if (reservationSuccessMessage) {
       setReservationSuccessMessage(null);
     }
+    if (reservationErrorMessage) {
+      setReservationErrorMessage(null);
+    }
+    if (reservationValidationMessages.length > 0) {
+      setReservationValidationMessages([]);
+    }
     if (isReservationCompleted) {
       setIsReservationCompleted(false);
     }
-    setReservationForm((prev) => ({ ...prev, [key]: value }));
+
+    const nextValue = key === 'customerPhone' ? normalizePhoneNumber(value) : value;
+    setReservationForm((prev) => ({ ...prev, [key]: nextValue }));
   };
 
   const handleReservationSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setReservationErrorMessage(null);
+    setReservationValidationMessages([]);
     setIsSubmittingReservation(true);
 
     try {
@@ -122,19 +135,22 @@ export function ShopDetailPage() {
       const reservationDate = reservationForm.reservationDate;
       const reservationTime = reservationForm.reservationTime;
       const partySize = Number(reservationForm.partySize);
+      const validationMessages: string[] = [];
 
-      if (!customerName || !customerPhone || !customerEmail || !reservationDate || !reservationTime || !reservationForm.partySize) {
-        setReservationErrorMessage('必須項目を入力してください。');
-        return;
-      }
+      if (!customerName) validationMessages.push('予約者名を入力してください。');
+      if (!customerPhone) validationMessages.push('電話番号を入力してください。');
+      if (!customerEmail) validationMessages.push('メールアドレスを入力してください。');
+      if (!reservationDate) validationMessages.push('予約日を選択してください。');
+      if (!reservationTime) validationMessages.push('予約時間を選択してください。');
+      if (!reservationForm.partySize) validationMessages.push('人数を入力してください。');
+      if (customerEmail && !isValidEmail(customerEmail)) validationMessages.push('メールアドレスの形式が正しくありません。例：example@example.com');
+      if (customerPhone && !isValidPhoneNumber(customerPhone)) validationMessages.push('電話番号は数字10〜11桁で入力してください。例：0888227590');
+      if (!Number.isInteger(partySize) || partySize < 1 || partySize > 20) validationMessages.push('人数は1〜20名の範囲で入力してください。');
+      if (reservationDate && reservationTime && !isFutureReservationDateTime(reservationDate, reservationTime)) validationMessages.push('予約日時は現在より後の日時を選択してください。');
 
-      if (!isValidEmail(customerEmail)) {
-        setReservationErrorMessage('メールアドレスの形式が正しくありません。');
-        return;
-      }
-
-      if (!Number.isInteger(partySize) || partySize < 1) {
-        setReservationErrorMessage('人数は1人以上で入力してください。');
+      if (validationMessages.length > 0) {
+        setReservationValidationMessages(validationMessages);
+        setReservationErrorMessage('入力内容を確認してください。');
         return;
       }
 
@@ -268,6 +284,16 @@ export function ShopDetailPage() {
           <h2>予約フォーム</h2>
           {reservationSuccessMessage ? <p className="status-ok">{reservationSuccessMessage}</p> : null}
           {reservationErrorMessage ? <p className="status-error">{reservationErrorMessage}</p> : null}
+          {reservationValidationMessages.length > 0 ? (
+            <section className="checklist-item-attention" aria-label="入力内容の確認">
+              <strong>入力内容を確認してください</strong>
+              <ul>
+                {reservationValidationMessages.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
           <form className="shop-form" noValidate onSubmit={(event) => void handleReservationSubmit(event)}>
             <div>
               <label htmlFor="customerName">
@@ -277,6 +303,8 @@ export function ShopDetailPage() {
                 id="customerName"
                 name="customerName"
                 value={reservationForm.customerName}
+                placeholder="例：山田太郎"
+                autoComplete="name"
                 onChange={(event) => handleReservationChange('customerName', event.target.value)}
               />
             </div>
@@ -287,9 +315,13 @@ export function ShopDetailPage() {
               <input
                 id="customerPhone"
                 name="customerPhone"
+                inputMode="tel"
                 value={reservationForm.customerPhone}
+                placeholder="例：0888227590"
+                autoComplete="tel"
                 onChange={(event) => handleReservationChange('customerPhone', event.target.value)}
               />
+              <p className="form-hint">数字のみ、または+から始まる国際電話番号で入力してください。</p>
             </div>
             <div>
               <label htmlFor="customerEmail">
@@ -298,9 +330,13 @@ export function ShopDetailPage() {
               <input
                 id="customerEmail"
                 name="customerEmail"
+                type="email"
                 value={reservationForm.customerEmail}
+                placeholder="例：example@example.com"
+                autoComplete="email"
                 onChange={(event) => handleReservationChange('customerEmail', event.target.value)}
               />
+              <p className="form-hint">予約確認メールを受け取れるメールアドレスを入力してください。</p>
             </div>
             <div>
               <label htmlFor="reservationDate">
@@ -334,9 +370,12 @@ export function ShopDetailPage() {
                 id="partySize"
                 type="number"
                 name="partySize"
+                min="1"
+                max="20"
                 value={reservationForm.partySize}
                 onChange={(event) => handleReservationChange('partySize', event.target.value)}
               />
+              <p className="form-hint">1〜20名で入力してください。</p>
             </div>
             <div>
               <label htmlFor="note">備考</label>
@@ -345,9 +384,18 @@ export function ShopDetailPage() {
                 name="note"
                 rows={4}
                 value={reservationForm.note}
+                placeholder="例：苦手な食材、座席の希望、連絡事項など"
                 onChange={(event) => handleReservationChange('note', event.target.value)}
               />
             </div>
+            <section className="checklist-item-ok" aria-label="予約内容確認">
+              <strong>送信前の確認</strong>
+              <p>予約者名：{reservationForm.customerName.trim() || '—'}</p>
+              <p>電話番号：{reservationForm.customerPhone.trim() || '—'}</p>
+              <p>メール：{reservationForm.customerEmail.trim() || '—'}</p>
+              <p>予約日時：{reservationForm.reservationDate && reservationForm.reservationTime ? new Date(`${reservationForm.reservationDate}T${reservationForm.reservationTime}`).toLocaleString('ja-JP') : '—'}</p>
+              <p>人数：{reservationForm.partySize ? `${reservationForm.partySize}名` : '—'}</p>
+            </section>
             <div className="shop-form-actions">
               <button type="submit" className="button-primary" disabled={isSubmittingReservation}>
                 {isSubmittingReservation ? '送信中...' : isReservationCompleted ? '予約完了' : '予約を送信'}
