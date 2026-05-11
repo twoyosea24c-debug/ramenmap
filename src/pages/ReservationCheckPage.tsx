@@ -1,4 +1,5 @@
 import { type FormEvent, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Reservation, ReservationStatus } from '../types';
 import {
   fetchReservationsByCustomerEmail,
@@ -46,7 +47,9 @@ const formatDatetimeLocalValue = (value: string): string => {
 };
 
 export function ReservationCheckPage() {
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+  const emailFromUrl = searchParams.get('email') ?? '';
+  const [email, setEmail] = useState(emailFromUrl);
   const [code, setCode] = useState('');
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -236,6 +239,8 @@ export function ReservationCheckPage() {
         <p className="form-hint">
           {codeSentAt ? 'メールアドレスへ認証コードを送りました。予約内容を確認できます。' : 'メールアドレスへ認証コードを送ります。予約内容を確認できます。'}
         </p>
+
+        {emailFromUrl ? <p className="status-ok">予約時のメールアドレスを入力済みです。認証コードを送信してください。</p> : null}
 
         <form className="shop-form" noValidate onSubmit={(e) => void sendCode(e)}>
           <div>

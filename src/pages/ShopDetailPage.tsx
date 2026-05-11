@@ -314,7 +314,7 @@ export function ShopDetailPage() {
               <p>人数：{completedReservationInfo.partySize}名</p>
               <p>予約メール：{completedReservationInfo.customerEmail}</p>
               <div className="shop-form-actions">
-                <Link to="/reservation/check" className="button-primary">予約確認ページを開く</Link>
+                <Link to={`/reservation/check?email=${encodeURIComponent(completedReservationInfo.customerEmail)}`} className="button-primary">予約確認ページを開く</Link>
               </div>
             </section>
           ) : null}
