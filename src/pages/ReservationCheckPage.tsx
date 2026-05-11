@@ -262,6 +262,14 @@ export function ReservationCheckPage() {
         {isSendingCode ? <p>認証コードを送信中...</p> : null}
 
         {codeSentAt ? (
+          <section className="checklist-item-ok" aria-label="認証コード送信後の案内">
+            <strong>次に行うこと</strong>
+            <p>メールに届いた6桁の数字を下の欄に入力してください。</p>
+            <p>入力後、「予約を確認する」を押すと予約内容を確認できます。</p>
+          </section>
+        ) : null}
+
+        {codeSentAt ? (
           <form className="shop-form" noValidate onSubmit={(e) => void verifyCodeAndFetchReservations(e)}>
             <div>
               <label htmlFor="verificationCode">認証コード</label>
