@@ -38,6 +38,7 @@ const normalizePhoneNumber = (value: string) => toHalfWidthNumber(value).replace
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhoneNumber = (phone: string) => /^0\d{9,10}$/.test(phone.replace(/-/g, '')) || /^\+\d{8,15}$/.test(phone);
 const isFutureReservationDateTime = (date: string, time: string) => new Date(`${date}T${time}`).getTime() > Date.now();
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : '予約の登録に失敗しました。時間をおいて再度お試しください。');
 
 export function ShopDetailPage() {
   const { id } = useParams();
@@ -204,7 +205,7 @@ export function ShopDetailPage() {
       setReservationForm(initialReservationFormData);
     } catch (error) {
       console.error(error);
-      setReservationErrorMessage('予約の登録に失敗しました。時間をおいて再度お試しください。');
+      setReservationErrorMessage(getErrorMessage(error));
     } finally {
       setIsSubmittingReservation(false);
     }
