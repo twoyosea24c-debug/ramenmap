@@ -32,7 +32,9 @@ const initialReservationFormData: ReservationFormData = {
   note: '',
 };
 
-const normalizePhoneNumber = (value: string) => value.replace(/[^0-9+]/g, '');
+const toHalfWidthNumber = (value: string) =>
+  value.replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0));
+const normalizePhoneNumber = (value: string) => toHalfWidthNumber(value).replace(/[ー−―‐]/g, '-').replace(/[^0-9+]/g, '');
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhoneNumber = (phone: string) => /^0\d{9,10}$/.test(phone.replace(/-/g, '')) || /^\+\d{8,15}$/.test(phone);
 const isFutureReservationDateTime = (date: string, time: string) => new Date(`${date}T${time}`).getTime() > Date.now();
@@ -130,7 +132,7 @@ export function ShopDetailPage() {
 
     try {
       const customerName = reservationForm.customerName.trim();
-      const customerPhone = reservationForm.customerPhone.trim();
+      const customerPhone = normalizePhoneNumber(reservationForm.customerPhone.trim());
       const customerEmail = reservationForm.customerEmail.trim();
       const reservationDate = reservationForm.reservationDate;
       const reservationTime = reservationForm.reservationTime;
@@ -151,6 +153,7 @@ export function ShopDetailPage() {
       if (validationMessages.length > 0) {
         setReservationValidationMessages(validationMessages);
         setReservationErrorMessage('入力内容を確認してください。');
+        setReservationForm((prev) => ({ ...prev, customerPhone }));
         return;
       }
 
@@ -321,7 +324,7 @@ export function ShopDetailPage() {
                 autoComplete="tel"
                 onChange={(event) => handleReservationChange('customerPhone', event.target.value)}
               />
-              <p className="form-hint">数字のみ、または+から始まる国際電話番号で入力してください。</p>
+              <p className="form-hint">全角数字を入力しても自動で半角数字に変換します。数字のみ、または+から始まる国際電話番号で入力してください。</p>
             </div>
             <div>
               <label htmlFor="customerEmail">
