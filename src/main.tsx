@@ -5,8 +5,11 @@ import App from './App';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { ShopsProvider } from './context/ShopsContext';
 import { AuthProvider } from './context/AuthContext';
+import { setupAdminStatusConfirmations } from './adminStatusConfirm';
 import './styles.css';
 import './mobile.css';
+
+setupAdminStatusConfirmations();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
