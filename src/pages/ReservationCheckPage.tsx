@@ -294,6 +294,14 @@ export function ReservationCheckPage() {
         {successMessage ? <p>{successMessage}</p> : null}
       </article>
 
+      {sortedReservations.length > 0 ? (
+        <article className="card reservation-result-card" aria-label="予約確認後の案内">
+          <h2>予約情報を確認できました</h2>
+          <p className="form-hint">下の予約カードから予約内容を確認できます。</p>
+          <p className="form-hint">予約日時や人数を変更したい場合は「予約変更依頼」、取り消したい場合は「キャンセル依頼」を押してください。</p>
+        </article>
+      ) : null}
+
       {sortedReservations.map((reservation) => (
         <article key={reservation.id} className="card reservation-result-card" aria-label="予約確認結果">
           <h2>{reservation.shopName}</h2>
