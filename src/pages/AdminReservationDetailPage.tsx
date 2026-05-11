@@ -58,6 +58,12 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   changeRequestPartySize: row.change_request_party_size,
   changeRequestNote: row.change_request_note,
   changeCompletionEmailSentAt: row.change_completion_email_sent_at,
+  changeAppliedAt: row.change_applied_at,
+  changeBeforeDatetime: row.change_before_datetime,
+  changeBeforePartySize: row.change_before_party_size,
+  changeAfterDatetime: row.change_after_datetime,
+  changeAfterPartySize: row.change_after_party_size,
+  changeAppliedNote: row.change_applied_note,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -133,14 +139,24 @@ export function AdminReservationDetailPage() {
     setStatusErrorMessage('');
     setIsApplyingChangeRequest(true);
     try {
+      const beforeDatetime = reservation.reservationDatetime;
+      const beforePartySize = reservation.partySize;
+      const afterDatetime = reservation.changeRequestDatetime ?? reservation.reservationDatetime;
+      const afterPartySize = reservation.changeRequestPartySize ?? reservation.partySize;
       const updatePayload: Partial<SupabaseReservationRow> = {
+        reservation_datetime: afterDatetime,
+        party_size: afterPartySize,
         change_requested_at: null,
         change_request_datetime: null,
         change_request_party_size: null,
         change_request_note: null,
+        change_applied_at: new Date().toISOString(),
+        change_before_datetime: beforeDatetime,
+        change_before_party_size: beforePartySize,
+        change_after_datetime: afterDatetime,
+        change_after_party_size: afterPartySize,
+        change_applied_note: reservation.changeRequestNote,
       };
-      if (reservation.changeRequestDatetime) updatePayload.reservation_datetime = reservation.changeRequestDatetime;
-      if (reservation.changeRequestPartySize) updatePayload.party_size = reservation.changeRequestPartySize;
       if (reservation.status === 'pending') updatePayload.status = 'confirmed';
 
       const { data, error } = await supabase
@@ -241,6 +257,18 @@ export function AdminReservationDetailPage() {
         </section>
       ) : null}
 
+      {!isLoading && !errorMessage && reservation?.changeAppliedAt ? (
+        <section className="checklist-item-ok">
+          <strong>予約変更処理済み</strong>
+          <p>処理日時：{formatDateTime(reservation.changeAppliedAt)}</p>
+          <p>変更前日時：{reservation.changeBeforeDatetime ? formatDateTime(reservation.changeBeforeDatetime) : '—'}</p>
+          <p>変更前人数：{reservation.changeBeforePartySize ? `${reservation.changeBeforePartySize}名` : '—'}</p>
+          <p>変更後日時：{reservation.changeAfterDatetime ? formatDateTime(reservation.changeAfterDatetime) : '—'}</p>
+          <p>変更後人数：{reservation.changeAfterPartySize ? `${reservation.changeAfterPartySize}名` : '—'}</p>
+          <p>変更時のご要望：{reservation.changeAppliedNote?.trim() ? reservation.changeAppliedNote : '—'}</p>
+        </section>
+      ) : null}
+
       {!isLoading && !errorMessage && reservation?.changeCompletionEmailSentAt ? (
         <section className="checklist-item-ok">
           <strong>予約変更完了メール送信済み</strong>
@@ -281,6 +309,12 @@ export function AdminReservationDetailPage() {
               <div><dt>変更希望日時</dt><dd>{reservation.changeRequestDatetime ? formatDateTime(reservation.changeRequestDatetime) : '—'}</dd></div>
               <div><dt>変更希望人数</dt><dd>{reservation.changeRequestPartySize ? `${reservation.changeRequestPartySize}名` : '—'}</dd></div>
               <div><dt>変更依頼のご要望</dt><dd>{reservation.changeRequestNote?.trim() ? reservation.changeRequestNote : '—'}</dd></div>
+              <div><dt>予約変更処理日時</dt><dd>{reservation.changeAppliedAt ? formatDateTime(reservation.changeAppliedAt) : '—'}</dd></div>
+              <div><dt>変更前日時</dt><dd>{reservation.changeBeforeDatetime ? formatDateTime(reservation.changeBeforeDatetime) : '—'}</dd></div>
+              <div><dt>変更前人数</dt><dd>{reservation.changeBeforePartySize ? `${reservation.changeBeforePartySize}名` : '—'}</dd></div>
+              <div><dt>変更後日時</dt><dd>{reservation.changeAfterDatetime ? formatDateTime(reservation.changeAfterDatetime) : '—'}</dd></div>
+              <div><dt>変更後人数</dt><dd>{reservation.changeAfterPartySize ? `${reservation.changeAfterPartySize}名` : '—'}</dd></div>
+              <div><dt>変更時のご要望</dt><dd>{reservation.changeAppliedNote?.trim() ? reservation.changeAppliedNote : '—'}</dd></div>
               <div><dt>予約変更完了メール</dt><dd>{reservation.changeCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.changeCompletionEmailSentAt)}）` : '—'}</dd></div>
               <div><dt>キャンセル理由</dt><dd>{reservation.cancelReason?.trim() ? reservation.cancelReason : '—'}</dd></div>
               <div><dt>キャンセル完了メール</dt><dd>{reservation.cancelCompletionEmailSentAt ? `送信済み（${formatDateTime(reservation.cancelCompletionEmailSentAt)}）` : '—'}</dd></div>

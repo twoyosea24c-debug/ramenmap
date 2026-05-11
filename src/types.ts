@@ -103,6 +103,12 @@ export type Reservation = {
   changeRequestPartySize: number | null;
   changeRequestNote: string | null;
   changeCompletionEmailSentAt: string | null;
+  changeAppliedAt: string | null;
+  changeBeforeDatetime: string | null;
+  changeBeforePartySize: number | null;
+  changeAfterDatetime: string | null;
+  changeAfterPartySize: number | null;
+  changeAppliedNote: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -140,6 +146,12 @@ export type SupabaseReservationRow = {
   change_request_party_size: number | null;
   change_request_note: string | null;
   change_completion_email_sent_at: string | null;
+  change_applied_at: string | null;
+  change_before_datetime: string | null;
+  change_before_party_size: number | null;
+  change_after_datetime: string | null;
+  change_after_party_size: number | null;
+  change_applied_note: string | null;
   created_at: string;
   updated_at: string;
 };
