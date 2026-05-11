@@ -24,6 +24,12 @@ const mapReservationRow = (row: SupabaseReservationRow): Reservation => ({
   changeRequestPartySize: row.change_request_party_size,
   changeRequestNote: row.change_request_note,
   changeCompletionEmailSentAt: row.change_completion_email_sent_at,
+  changeAppliedAt: row.change_applied_at,
+  changeBeforeDatetime: row.change_before_datetime,
+  changeBeforePartySize: row.change_before_party_size,
+  changeAfterDatetime: row.change_after_datetime,
+  changeAfterPartySize: row.change_after_party_size,
+  changeAppliedNote: row.change_applied_note,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -108,7 +114,36 @@ export const createReservation = async (input: ReservationInsert): Promise<Reser
   });
   if (error) throw error;
   const now = new Date().toISOString();
-  return { id: crypto.randomUUID?.() ?? `${Date.now()}`, shopId: input.shopId, shopName: input.shopName, customerName: input.customerName, customerPhone: input.customerPhone, customerEmail: input.customerEmail, reservationDatetime: input.reservationDatetime, partySize: input.partySize, status, note, cancelReason: null, adminMemo: null, cancelRequestedAt: null, cancelRequestReason: null, cancelCompletionEmailSentAt: null, changeRequestedAt: null, changeRequestDatetime: null, changeRequestPartySize: null, changeRequestNote: null, changeCompletionEmailSentAt: null, createdAt: now, updatedAt: now };
+  return {
+    id: crypto.randomUUID?.() ?? `${Date.now()}`,
+    shopId: input.shopId,
+    shopName: input.shopName,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+    reservationDatetime: input.reservationDatetime,
+    partySize: input.partySize,
+    status,
+    note,
+    cancelReason: null,
+    adminMemo: null,
+    cancelRequestedAt: null,
+    cancelRequestReason: null,
+    cancelCompletionEmailSentAt: null,
+    changeRequestedAt: null,
+    changeRequestDatetime: null,
+    changeRequestPartySize: null,
+    changeRequestNote: null,
+    changeCompletionEmailSentAt: null,
+    changeAppliedAt: null,
+    changeBeforeDatetime: null,
+    changeBeforePartySize: null,
+    changeAfterDatetime: null,
+    changeAfterPartySize: null,
+    changeAppliedNote: null,
+    createdAt: now,
+    updatedAt: now,
+  };
 };
 
 export const updateReservationStatus = async (reservationId: Reservation['id'], status: ReservationStatus): Promise<Reservation> => {
