@@ -17,6 +17,24 @@ type DashboardCategory = {
   actions: DashboardAction[];
 };
 
+type ReservationDashboardStats = {
+  pending: number;
+  changeRequests: number;
+  cancelRequests: number;
+  changed: number;
+  canceled: number;
+  visited: number;
+};
+
+const EMPTY_RESERVATION_STATS: ReservationDashboardStats = {
+  pending: 0,
+  changeRequests: 0,
+  cancelRequests: 0,
+  changed: 0,
+  canceled: 0,
+  visited: 0,
+};
+
 const DASHBOARD_CATEGORIES: DashboardCategory[] = [
   {
     title: '店舗管理',
@@ -55,8 +73,7 @@ export function AdminPage() {
   const { shops } = useShops();
   const [historyVersion, setHistoryVersion] = useState(0);
   const operationLogs = useMemo(() => getAdminOperationLogs(), [historyVersion]);
-  const [pendingReservationCount, setPendingReservationCount] = useState(0);
-  const [changeRequestCount, setChangeRequestCount] = useState(0);
+  const [reservationStats, setReservationStats] = useState<ReservationDashboardStats>(EMPTY_RESERVATION_STATS);
   const [isReservationsLoading, setIsReservationsLoading] = useState(true);
   const [reservationsError, setReservationsError] = useState('');
 
@@ -66,8 +83,14 @@ export function AdminPage() {
       setReservationsError('');
       try {
         const data = await fetchReservations();
-        setPendingReservationCount(data.filter((reservation) => reservation.status === 'pending').length);
-        setChangeRequestCount(data.filter((reservation) => Boolean(reservation.changeRequestedAt)).length);
+        setReservationStats({
+          pending: data.filter((reservation) => reservation.status === 'pending').length,
+          changeRequests: data.filter((reservation) => Boolean(reservation.changeRequestedAt) && reservation.status !== 'canceled' && reservation.status !== 'visited').length,
+          cancelRequests: data.filter((reservation) => Boolean(reservation.cancelRequestedAt) && reservation.status !== 'canceled').length,
+          changed: data.filter((reservation) => Boolean(reservation.changeAppliedAt)).length,
+          canceled: data.filter((reservation) => reservation.status === 'canceled').length,
+          visited: data.filter((reservation) => reservation.status === 'visited').length,
+        });
       } catch {
         setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
       } finally {
@@ -78,6 +101,7 @@ export function AdminPage() {
     void loadReservationStatus();
   }, []);
 
+  const taskCount = reservationStats.pending + reservationStats.changeRequests + reservationStats.cancelRequests;
 
   const qualityRows = [...shops]
     .map((shop) => {
@@ -143,28 +167,64 @@ export function AdminPage() {
         </div>
       </dl>
 
-      <section aria-label="予約通知" className="admin-reservation-notice">
+      <section aria-label="本日対応が必要な予約" className="admin-reservation-notice">
+        <div className="page-header">
+          <div>
+            <h2>本日対応が必要</h2>
+            <p className="form-hint">未処理の予約・変更依頼・キャンセル依頼を確認します。</p>
+          </div>
+          <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+        </div>
+
         {isReservationsLoading ? <p>予約状況を読み込み中...</p> : null}
         {!isReservationsLoading && reservationsError ? <p className="status-error">{reservationsError}</p> : null}
         {!isReservationsLoading && !reservationsError ? (
           <>
-            <p>未確認の予約：<strong>{pendingReservationCount}件</strong></p>
-            <p>予約変更依頼：<strong>{changeRequestCount}件</strong></p>
-            {pendingReservationCount > 0 ? (
+            <section className="reservation-summary-grid" aria-label="対応が必要な件数">
+              <article className="reservation-summary-card reservation-summary-alert">
+                <h3>未確認予約</h3>
+                <p>{reservationStats.pending}件</p>
+              </article>
+              <article className="reservation-summary-card reservation-summary-alert">
+                <h3>予約変更依頼</h3>
+                <p>{reservationStats.changeRequests}件</p>
+              </article>
+              <article className="reservation-summary-card reservation-summary-alert">
+                <h3>キャンセル依頼</h3>
+                <p>{reservationStats.cancelRequests}件</p>
+              </article>
+            </section>
+
+            {taskCount > 0 ? (
               <div className="admin-reservation-alert-card">
-                <p className="admin-reservation-alert">新しい予約があります。確認してください。</p>
+                <p className="admin-reservation-alert">対応が必要な予約が {taskCount} 件あります。予約管理を開いて確認してください。</p>
                 <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
               </div>
-            ) : null}
-            {changeRequestCount > 0 ? (
-              <div className="admin-reservation-alert-card">
-                <p className="admin-reservation-alert">予約変更依頼があります。確認してください。</p>
-                <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+            ) : (
+              <div className="checklist-item-ok">
+                <strong>現在、緊急対応が必要な予約はありません。</strong>
               </div>
-            ) : null}
-            
+            )}
           </>
         ) : null}
+      </section>
+
+      <section aria-label="処理済み予約" className="admin-reservation-notice">
+        <h2>処理済み</h2>
+        <section className="reservation-summary-grid" aria-label="処理済み件数">
+          <article className="reservation-summary-card">
+            <h3>変更処理済み</h3>
+            <p>{reservationStats.changed}件</p>
+          </article>
+          <article className="reservation-summary-card reservation-summary-cancelled">
+            <h3>キャンセル済み</h3>
+            <p>{reservationStats.canceled}件</p>
+          </article>
+          <article className="reservation-summary-card">
+            <h3>来店済み</h3>
+            <p>{reservationStats.visited}件</p>
+          </article>
+        </section>
       </section>
 
       <section className="admin-category-grid" aria-label="管理カテゴリ">
