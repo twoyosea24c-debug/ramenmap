@@ -6,10 +6,12 @@ import { FavoritesProvider } from './context/FavoritesContext';
 import { ShopsProvider } from './context/ShopsContext';
 import { AuthProvider } from './context/AuthContext';
 import { setupAdminStatusConfirmations } from './adminStatusConfirm';
+import { setupAdminCancelledDisplay } from './adminCancelledDisplay';
 import './styles.css';
 import './mobile.css';
 
 setupAdminStatusConfirmations();
+setupAdminCancelledDisplay();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
