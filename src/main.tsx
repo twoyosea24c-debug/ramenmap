@@ -12,6 +12,7 @@ import { setupAdminAttentionFilter } from './adminAttentionFilter';
 import { setupAdminDateShortcuts } from './adminDateShortcut';
 import { setupAdminFinalChecklist } from './adminFinalChecklist';
 import { setupAdminReservationsReload } from './adminReservationsReload';
+import { setupAdminAfterActionMessage } from './adminAfterActionMessage';
 import './styles.css';
 import './mobile.css';
 
@@ -22,6 +23,7 @@ setupAdminAttentionFilter();
 setupAdminDateShortcuts();
 setupAdminFinalChecklist();
 setupAdminReservationsReload();
+setupAdminAfterActionMessage();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
