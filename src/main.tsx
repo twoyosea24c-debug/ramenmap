@@ -8,12 +8,14 @@ import { AuthProvider } from './context/AuthContext';
 import { setupAdminStatusConfirmations } from './adminStatusConfirm';
 import { setupAdminCancelledDisplay } from './adminCancelledDisplay';
 import { setupAdminReservationGuide } from './adminReservationGuide';
+import { setupAdminAttentionFilter } from './adminAttentionFilter';
 import './styles.css';
 import './mobile.css';
 
 setupAdminStatusConfirmations();
 setupAdminCancelledDisplay();
 setupAdminReservationGuide();
+setupAdminAttentionFilter();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
