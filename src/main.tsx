@@ -15,6 +15,7 @@ import { setupAdminReservationsReload } from './adminReservationsReload';
 import { setupAdminAfterActionMessage } from './adminAfterActionMessage';
 import { setupAdminRequestTypeDisplay } from './adminRequestTypeDisplay';
 import { setupAdminColorLegend } from './adminColorLegend';
+import { setupAdminFilterReset } from './adminFilterReset';
 import './styles.css';
 import './mobile.css';
 
@@ -28,6 +29,7 @@ setupAdminReservationsReload();
 setupAdminAfterActionMessage();
 setupAdminRequestTypeDisplay();
 setupAdminColorLegend();
+setupAdminFilterReset();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
