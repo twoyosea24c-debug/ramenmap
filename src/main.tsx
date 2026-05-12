@@ -9,6 +9,7 @@ import { setupAdminStatusConfirmations } from './adminStatusConfirm';
 import { setupAdminCancelledDisplay } from './adminCancelledDisplay';
 import { setupAdminReservationGuide } from './adminReservationGuide';
 import { setupAdminAttentionFilter } from './adminAttentionFilter';
+import { setupAdminDateShortcuts } from './adminDateShortcut';
 import './styles.css';
 import './mobile.css';
 
@@ -16,6 +17,7 @@ setupAdminStatusConfirmations();
 setupAdminCancelledDisplay();
 setupAdminReservationGuide();
 setupAdminAttentionFilter();
+setupAdminDateShortcuts();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
