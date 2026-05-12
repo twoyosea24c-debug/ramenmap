@@ -11,6 +11,7 @@ import { setupAdminReservationGuide } from './adminReservationGuide';
 import { setupAdminAttentionFilter } from './adminAttentionFilter';
 import { setupAdminDateShortcuts } from './adminDateShortcut';
 import { setupAdminFinalChecklist } from './adminFinalChecklist';
+import { setupAdminReservationsReload } from './adminReservationsReload';
 import './styles.css';
 import './mobile.css';
 
@@ -20,6 +21,7 @@ setupAdminReservationGuide();
 setupAdminAttentionFilter();
 setupAdminDateShortcuts();
 setupAdminFinalChecklist();
+setupAdminReservationsReload();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
