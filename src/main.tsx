@@ -13,6 +13,7 @@ import { setupAdminDateShortcuts } from './adminDateShortcut';
 import { setupAdminFinalChecklist } from './adminFinalChecklist';
 import { setupAdminReservationsReload } from './adminReservationsReload';
 import { setupAdminAfterActionMessage } from './adminAfterActionMessage';
+import { setupAdminRequestTypeDisplay } from './adminRequestTypeDisplay';
 import './styles.css';
 import './mobile.css';
 
@@ -24,6 +25,7 @@ setupAdminDateShortcuts();
 setupAdminFinalChecklist();
 setupAdminReservationsReload();
 setupAdminAfterActionMessage();
+setupAdminRequestTypeDisplay();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

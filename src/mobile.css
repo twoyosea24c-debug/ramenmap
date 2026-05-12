@@ -183,6 +183,21 @@
   white-space: nowrap;
 }
 
+.reservation-row-change-requested {
+  border-left: 6px solid #2563eb;
+  background: #eff6ff;
+}
+
+.reservation-row-cancel-requested-strong {
+  border-left: 6px solid #dc2626;
+  background: #fff1f2;
+}
+
+.reservation-row-change-requested.reservation-row-cancel-requested-strong {
+  border-left: 6px solid #7c3aed;
+  background: linear-gradient(90deg, #f5f3ff 0%, #fff1f2 100%);
+}
+
 .admin-reservation-guide-panel {
   border: 1px solid #93c5fd;
   background: #eff6ff;
