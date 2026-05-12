@@ -16,6 +16,7 @@ import { setupAdminAfterActionMessage } from './adminAfterActionMessage';
 import { setupAdminRequestTypeDisplay } from './adminRequestTypeDisplay';
 import { setupAdminColorLegend } from './adminColorLegend';
 import { setupAdminFilterReset } from './adminFilterReset';
+import { setupAdminStatusShortcuts } from './adminStatusShortcuts';
 import './styles.css';
 import './mobile.css';
 
@@ -30,6 +31,7 @@ setupAdminAfterActionMessage();
 setupAdminRequestTypeDisplay();
 setupAdminColorLegend();
 setupAdminFilterReset();
+setupAdminStatusShortcuts();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

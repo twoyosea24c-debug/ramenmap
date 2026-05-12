@@ -244,7 +244,8 @@
   white-space: nowrap;
 }
 
-.admin-date-shortcut-panel {
+.admin-date-shortcut-panel,
+.admin-status-shortcut-panel {
   border: 1px solid #bfdbfe;
   background: #f8fafc;
   border-radius: 12px;
@@ -255,19 +256,23 @@
   gap: 0.75rem;
 }
 
-.admin-date-shortcut-panel strong {
+.admin-date-shortcut-panel strong,
+.admin-status-shortcut-panel strong {
   color: #1f2937;
   white-space: nowrap;
 }
 
-.admin-date-shortcut-actions {
+.admin-date-shortcut-actions,
+.admin-status-shortcut-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .admin-date-shortcut-actions .button-primary,
-.admin-date-shortcut-actions .button-secondary {
+.admin-date-shortcut-actions .button-secondary,
+.admin-status-shortcut-actions .button-primary,
+.admin-status-shortcut-actions .button-secondary {
   width: auto;
   min-height: 40px;
   padding: 0.55rem 0.8rem;
@@ -399,18 +404,22 @@
 @media (max-width: 768px) {
   .admin-attention-filter-panel,
   .admin-date-shortcut-panel,
+  .admin-status-shortcut-panel,
   .admin-filter-reset-panel {
     grid-template-columns: 1fr;
   }
 
   .admin-date-shortcut-actions,
+  .admin-status-shortcut-actions,
   .admin-color-legend-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
 
   .admin-date-shortcut-actions .button-primary,
-  .admin-date-shortcut-actions .button-secondary {
+  .admin-date-shortcut-actions .button-secondary,
+  .admin-status-shortcut-actions .button-primary,
+  .admin-status-shortcut-actions .button-secondary {
     width: 100%;
     min-height: 44px;
   }
@@ -419,6 +428,7 @@
 @media (max-width: 420px) {
   .nav-list,
   .admin-date-shortcut-actions,
+  .admin-status-shortcut-actions,
   .admin-color-legend-list {
     grid-template-columns: 1fr;
   }
