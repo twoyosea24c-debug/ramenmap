@@ -324,13 +324,64 @@
   line-height: 1.6;
 }
 
+.admin-color-legend-panel {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-color-legend-panel strong {
+  color: #1f2937;
+}
+
+.admin-color-legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.9rem;
+}
+
+.admin-color-legend-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.legend-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.legend-dot-blue {
+  background: #2563eb;
+}
+
+.legend-dot-red {
+  background: #dc2626;
+}
+
+.legend-dot-purple {
+  background: #7c3aed;
+}
+
+.legend-dot-yellow {
+  background: #f59e0b;
+}
+
 @media (max-width: 768px) {
   .admin-attention-filter-panel,
   .admin-date-shortcut-panel {
     grid-template-columns: 1fr;
   }
 
-  .admin-date-shortcut-actions {
+  .admin-date-shortcut-actions,
+  .admin-color-legend-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
@@ -344,7 +395,8 @@
 
 @media (max-width: 420px) {
   .nav-list,
-  .admin-date-shortcut-actions {
+  .admin-date-shortcut-actions,
+  .admin-color-legend-list {
     grid-template-columns: 1fr;
   }
 

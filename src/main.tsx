@@ -14,6 +14,7 @@ import { setupAdminFinalChecklist } from './adminFinalChecklist';
 import { setupAdminReservationsReload } from './adminReservationsReload';
 import { setupAdminAfterActionMessage } from './adminAfterActionMessage';
 import { setupAdminRequestTypeDisplay } from './adminRequestTypeDisplay';
+import { setupAdminColorLegend } from './adminColorLegend';
 import './styles.css';
 import './mobile.css';
 
@@ -26,6 +27,7 @@ setupAdminFinalChecklist();
 setupAdminReservationsReload();
 setupAdminAfterActionMessage();
 setupAdminRequestTypeDisplay();
+setupAdminColorLegend();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
