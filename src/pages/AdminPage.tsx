@@ -77,27 +77,27 @@ export function AdminPage() {
   const [isReservationsLoading, setIsReservationsLoading] = useState(true);
   const [reservationsError, setReservationsError] = useState('');
 
-  useEffect(() => {
-    const loadReservationStatus = async () => {
-      setIsReservationsLoading(true);
-      setReservationsError('');
-      try {
-        const data = await fetchReservations();
-        setReservationStats({
-          pending: data.filter((reservation) => reservation.status === 'pending').length,
-          changeRequests: data.filter((reservation) => Boolean(reservation.changeRequestedAt) && reservation.status !== 'canceled' && reservation.status !== 'visited').length,
-          cancelRequests: data.filter((reservation) => Boolean(reservation.cancelRequestedAt) && reservation.status !== 'canceled').length,
-          changed: data.filter((reservation) => Boolean(reservation.changeAppliedAt)).length,
-          canceled: data.filter((reservation) => reservation.status === 'canceled').length,
-          visited: data.filter((reservation) => reservation.status === 'visited').length,
-        });
-      } catch {
-        setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
-      } finally {
-        setIsReservationsLoading(false);
-      }
-    };
+  const loadReservationStatus = async () => {
+    setIsReservationsLoading(true);
+    setReservationsError('');
+    try {
+      const data = await fetchReservations();
+      setReservationStats({
+        pending: data.filter((reservation) => reservation.status === 'pending').length,
+        changeRequests: data.filter((reservation) => Boolean(reservation.changeRequestedAt) && reservation.status !== 'canceled' && reservation.status !== 'visited').length,
+        cancelRequests: data.filter((reservation) => Boolean(reservation.cancelRequestedAt) && reservation.status !== 'canceled').length,
+        changed: data.filter((reservation) => Boolean(reservation.changeAppliedAt)).length,
+        canceled: data.filter((reservation) => reservation.status === 'canceled').length,
+        visited: data.filter((reservation) => reservation.status === 'visited').length,
+      });
+    } catch {
+      setReservationsError('予約状況を取得できませんでした。Supabase設定を確認してください。');
+    } finally {
+      setIsReservationsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     void loadReservationStatus();
   }, []);
 
@@ -188,7 +188,12 @@ export function AdminPage() {
             <h2>本日対応が必要</h2>
             <p className="form-hint">未処理の予約・変更依頼・キャンセル依頼を確認します。</p>
           </div>
-          <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+          <div className="page-header-actions">
+            <button type="button" className="button-secondary" disabled={isReservationsLoading} onClick={() => void loadReservationStatus()}>
+              {isReservationsLoading ? '更新中...' : '予約状況を再読み込み'}
+            </button>
+            <Link to="/admin/reservations" className="button-primary admin-reservation-cta">予約管理を開く</Link>
+          </div>
         </div>
 
         {isReservationsLoading ? <p>予約状況を読み込み中...</p> : null}
