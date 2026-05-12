@@ -291,6 +291,24 @@
   font-weight: 700;
 }
 
+.admin-after-action-message {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.admin-after-action-message strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.admin-after-action-message p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 @media (max-width: 768px) {
   .admin-attention-filter-panel,
   .admin-date-shortcut-panel {
