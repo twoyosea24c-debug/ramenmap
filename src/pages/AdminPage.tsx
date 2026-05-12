@@ -205,6 +205,16 @@ export function AdminPage() {
                 <strong>現在、緊急対応が必要な予約はありません。</strong>
               </div>
             )}
+
+            <section className="admin-date-shortcut-panel" aria-label="予約管理ショートカット">
+              <strong>予約をすばやく確認</strong>
+              <div className="admin-date-shortcut-actions">
+                <Link to="/admin/reservations?date=today" className="button-primary">今日の予約</Link>
+                <Link to="/admin/reservations?date=tomorrow" className="button-primary">明日の予約</Link>
+                <Link to="/admin/reservations?date=thisWeek" className="button-secondary">今週の予約</Link>
+                <Link to="/admin/reservations" className="button-secondary">すべての予約</Link>
+              </div>
+            </section>
           </>
         ) : null}
       </section>
