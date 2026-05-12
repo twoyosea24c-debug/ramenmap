@@ -147,7 +147,22 @@ export function AdminPage() {
     return (
       <section className="card detail-wrapper">
         <h1>管理者ダッシュボード</h1>
-        <p className="status-error">管理者のみアクセスできます</p>
+        <section className="checklist-item-attention">
+          <strong>管理画面にアクセスできません。</strong>
+          <p>管理者ログインが必要です。ログイン後に、上部メニューの「管理画面」から再度開いてください。</p>
+        </section>
+        <div className="shop-form-actions">
+          <Link to="/login" className="button-primary">ログイン画面を開く</Link>
+          <Link to="/" className="button-secondary">トップへ戻る</Link>
+        </div>
+        <section className="admin-reservation-guide-panel" aria-label="管理画面に入れない場合の確認事項">
+          <strong>確認すること</strong>
+          <ol>
+            <li>ログイン済みか確認してください。</li>
+            <li>ログイン後、名前の横に「管理者」と表示されているか確認してください。</li>
+            <li>管理者表示がない場合は、管理者権限の設定が必要です。</li>
+          </ol>
+        </section>
       </section>
     );
   }
