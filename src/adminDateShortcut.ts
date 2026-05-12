@@ -1,11 +1,25 @@
 const isAdminReservationListPage = () => window.location.pathname === '/admin/reservations';
 
+const DATE_SHORTCUT_VALUES = ['all', 'today', 'tomorrow', 'thisWeek', 'thisMonth'] as const;
+
+const isDateShortcutValue = (value: string | null): value is (typeof DATE_SHORTCUT_VALUES)[number] =>
+  value !== null && DATE_SHORTCUT_VALUES.includes(value as (typeof DATE_SHORTCUT_VALUES)[number]);
+
 const setDateFilter = (value: string) => {
   const select = document.querySelector<HTMLSelectElement>('#reservation-date-filter');
   if (!select) return;
 
   select.value = value;
   select.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const applyDateQueryParameter = () => {
+  if (!isAdminReservationListPage()) return;
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get('date');
+  if (!isDateShortcutValue(date)) return;
+
+  setDateFilter(date);
 };
 
 const buildDateShortcutPanel = () => {
@@ -41,11 +55,15 @@ const buildDateShortcutPanel = () => {
 
 const insertDateShortcutPanel = () => {
   if (!isAdminReservationListPage()) return;
-  if (document.querySelector('.admin-date-shortcut-panel')) return;
+  if (document.querySelector('.admin-date-shortcut-panel')) {
+    applyDateQueryParameter();
+    return;
+  }
 
   const filterGrid = document.querySelector('.reservation-filter-grid');
   if (!filterGrid) return;
   filterGrid.insertAdjacentElement('beforebegin', buildDateShortcutPanel());
+  applyDateQueryParameter();
 };
 
 export const setupAdminDateShortcuts = () => {
