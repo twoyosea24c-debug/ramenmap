@@ -26,6 +26,7 @@ import { setupReservationStatusLegend } from './reservationStatusLegend';
 import { setupAdminDetailListBack } from './adminDetailListBack';
 import { setupAdminDetailGuide } from './adminDetailGuide';
 import { setupAdminDetailChecklist } from './adminDetailChecklist';
+import { setupAdminContactCopy } from './adminContactCopy';
 import './styles.css';
 import './mobile.css';
 
@@ -50,6 +51,7 @@ setupReservationStatusLegend();
 setupAdminDetailListBack();
 setupAdminDetailGuide();
 setupAdminDetailChecklist();
+setupAdminContactCopy();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
