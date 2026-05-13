@@ -26,6 +26,13 @@ const saveCheckedItems = (checkedItems: Set<string>) => {
   localStorage.setItem(getStorageKey(), JSON.stringify(Array.from(checkedItems)));
 };
 
+const resetChecklist = (panel: HTMLElement) => {
+  localStorage.removeItem(getStorageKey());
+  panel.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+};
+
 const buildDetailChecklist = () => {
   const checkedItems = loadCheckedItems();
   const panel = document.createElement('section');
@@ -66,7 +73,17 @@ const buildDetailChecklist = () => {
     list.append(label);
   });
 
-  panel.append(title, description, list);
+  const actions = document.createElement('div');
+  actions.className = 'admin-detail-checklist-actions';
+
+  const resetButton = document.createElement('button');
+  resetButton.type = 'button';
+  resetButton.className = 'button-secondary admin-detail-checklist-reset-button';
+  resetButton.textContent = 'チェックをリセット';
+  resetButton.addEventListener('click', () => resetChecklist(panel));
+
+  actions.append(resetButton);
+  panel.append(title, description, list, actions);
   return panel;
 };
 
