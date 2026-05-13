@@ -22,6 +22,7 @@ import { setupReservationCheckGuide } from './reservationCheckGuide';
 import { setupAdminDetailReload } from './adminDetailReload';
 import { setupReservationResultReload } from './reservationResultReload';
 import { setupReservationInputHelp } from './reservationInputHelp';
+import { setupReservationStatusLegend } from './reservationStatusLegend';
 import './styles.css';
 import './mobile.css';
 
@@ -42,6 +43,7 @@ setupReservationCheckGuide();
 setupAdminDetailReload();
 setupReservationResultReload();
 setupReservationInputHelp();
+setupReservationStatusLegend();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
