@@ -17,6 +17,7 @@ import { setupAdminRequestTypeDisplay } from './adminRequestTypeDisplay';
 import { setupAdminColorLegend } from './adminColorLegend';
 import { setupAdminFilterReset } from './adminFilterReset';
 import { setupAdminStatusShortcuts } from './adminStatusShortcuts';
+import { setupAdminPriorityGuide } from './adminPriorityGuide';
 import './styles.css';
 import './mobile.css';
 
@@ -32,6 +33,7 @@ setupAdminRequestTypeDisplay();
 setupAdminColorLegend();
 setupAdminFilterReset();
 setupAdminStatusShortcuts();
+setupAdminPriorityGuide();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
