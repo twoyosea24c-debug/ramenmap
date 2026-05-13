@@ -1,6 +1,9 @@
 const isAdminReservationDetailPage = () => /^\/admin\/reservations\/[^/]+$/.test(window.location.pathname);
 
-const getReservationId = () => window.location.pathname.split('/').filter(Boolean).at(-1) ?? 'unknown';
+const getReservationId = () => {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  return pathParts[pathParts.length - 1] ?? 'unknown';
+};
 
 const getStorageKey = () => `admin-reservation-detail-checklist:${getReservationId()}`;
 
@@ -11,7 +14,7 @@ const CHECKLIST_ITEMS = [
   '管理メモに対応内容を残した',
 ] as const;
 
-const loadCheckedItems = () => {
+const loadCheckedItems = (): Set<string> => {
   try {
     return new Set(JSON.parse(localStorage.getItem(getStorageKey()) ?? '[]') as string[]);
   } catch {
