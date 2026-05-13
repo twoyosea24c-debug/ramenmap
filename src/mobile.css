@@ -364,6 +364,15 @@
   flex: 0 0 auto;
 }
 
+.admin-detail-checklist-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.admin-detail-checklist-reset-button {
+  width: auto;
+}
+
 .admin-after-action-message {
   border: 1px solid #a7f3d0;
   background: #ecfdf5;
@@ -481,7 +490,8 @@
   .admin-date-shortcut-actions .button-primary,
   .admin-date-shortcut-actions .button-secondary,
   .admin-status-shortcut-actions .button-primary,
-  .admin-status-shortcut-actions .button-secondary {
+  .admin-status-shortcut-actions .button-secondary,
+  .admin-detail-checklist-reset-button {
     width: 100%;
     min-height: 44px;
   }
