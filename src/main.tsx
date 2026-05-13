@@ -20,6 +20,7 @@ import { setupAdminStatusShortcuts } from './adminStatusShortcuts';
 import { setupAdminPriorityGuide } from './adminPriorityGuide';
 import { setupReservationCheckGuide } from './reservationCheckGuide';
 import { setupAdminDetailReload } from './adminDetailReload';
+import { setupReservationResultReload } from './reservationResultReload';
 import './styles.css';
 import './mobile.css';
 
@@ -38,6 +39,7 @@ setupAdminStatusShortcuts();
 setupAdminPriorityGuide();
 setupReservationCheckGuide();
 setupAdminDetailReload();
+setupReservationResultReload();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
