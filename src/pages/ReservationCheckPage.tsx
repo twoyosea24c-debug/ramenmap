@@ -24,6 +24,8 @@ const RESERVATION_STATUS_CLASS_NAMES: Record<ReservationStatus, string> = {
   visited: 'reservation-status-completed',
 };
 
+const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
+
 const formatReservationDatetime = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -60,16 +62,18 @@ export function ReservationCheckPage() {
   const [submittingCancelRequestId, setSubmittingCancelRequestId] = useState<string | null>(null);
   const [submittingChangeRequestId, setSubmittingChangeRequestId] = useState<string | null>(null);
   const [editingChangeRequestId, setEditingChangeRequestId] = useState<string | null>(null);
+  const [editingCancelRequestId, setEditingCancelRequestId] = useState<string | null>(null);
   const [changeRequestDatetime, setChangeRequestDatetime] = useState('');
   const [changeRequestPartySize, setChangeRequestPartySize] = useState('');
   const [changeRequestNote, setChangeRequestNote] = useState('');
+  const [cancelRequestReason, setCancelRequestReason] = useState('');
+  const [cancelRequestNote, setCancelRequestNote] = useState('');
   const resultsGuideRef = useRef<HTMLElement | null>(null);
-
-  const CANCEL_REQUEST_REASON_OPTIONS = ['予定が合わなくなった', '人数が変わった', '間違えて予約した', '体調不良', 'その他'] as const;
 
   const openChangeRequestForm = (reservation: Reservation) => {
     setErrorMessage(null);
     setSuccessMessage(null);
+    setEditingCancelRequestId(null);
     setEditingChangeRequestId(reservation.id);
     setChangeRequestDatetime(reservation.changeRequestDatetime ? formatDatetimeLocalValue(reservation.changeRequestDatetime) : '');
     setChangeRequestPartySize(reservation.changeRequestPartySize ? String(reservation.changeRequestPartySize) : '');
@@ -81,6 +85,22 @@ export function ReservationCheckPage() {
     setChangeRequestDatetime('');
     setChangeRequestPartySize('');
     setChangeRequestNote('');
+  };
+
+  const openCancelRequestForm = (reservation: Reservation) => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setEditingChangeRequestId(null);
+    setEditingCancelRequestId(reservation.id);
+    const matchedReason = CANCEL_REQUEST_REASON_OPTIONS.find((reason) => reservation.cancelRequestReason?.startsWith(reason));
+    setCancelRequestReason(matchedReason ?? '');
+    setCancelRequestNote(reservation.cancelRequestReason ?? '');
+  };
+
+  const closeCancelRequestForm = () => {
+    setEditingCancelRequestId(null);
+    setCancelRequestReason('');
+    setCancelRequestNote('');
   };
 
   useEffect(() => {
@@ -130,16 +150,16 @@ export function ReservationCheckPage() {
     }
   };
 
-  const handleCancelRequest = async (reservation: Reservation) => {
+  const handleCancelRequestSubmit = async (event: FormEvent<HTMLFormElement>, reservation: Reservation) => {
+    event.preventDefault();
     if (reservation.status === 'canceled' || reservation.status === 'visited' || reservation.cancelRequestedAt) return;
 
-    const suggested = `キャンセル依頼理由を入力してください。\n候補: ${CANCEL_REQUEST_REASON_OPTIONS.join(' / ')}`;
-    const input = window.prompt(suggested, reservation.cancelRequestReason ?? '');
-    if (input === null) return;
+    const selectedReason = cancelRequestReason.trim();
+    const detail = cancelRequestNote.trim();
+    const reason = selectedReason && detail && selectedReason !== detail ? `${selectedReason}：${detail}` : selectedReason || detail;
 
-    const reason = input.trim();
     if (!reason) {
-      setErrorMessage('キャンセル依頼の理由を入力してください。');
+      setErrorMessage('キャンセル依頼の理由を選択または入力してください。');
       return;
     }
 
@@ -153,6 +173,7 @@ export function ReservationCheckPage() {
       const updated = await requestReservationCancellation(reservation.id, reason);
       setReservations((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setSuccessMessage('キャンセル依頼を送信しました。店舗からの確認連絡をお待ちください。');
+      closeCancelRequestForm();
       try {
         await sendCancelRequestAdminNotification(updated);
       } catch (notificationError) {
@@ -437,6 +458,42 @@ export function ReservationCheckPage() {
                     >
                       キャンセル依頼を送信済みです。店舗からの確認連絡をお待ちください。
                     </p>
+                  ) : editingCancelRequestId === reservation.id ? (
+                    <form className="shop-form" onSubmit={(event) => { void handleCancelRequestSubmit(event, reservation); }}>
+                      <div>
+                        <label htmlFor={`cancel-reason-${reservation.id}`}>キャンセル依頼理由</label>
+                        <p className="form-hint">一番近い理由を選択してください。</p>
+                        <select
+                          id={`cancel-reason-${reservation.id}`}
+                          value={cancelRequestReason}
+                          onChange={(event) => setCancelRequestReason(event.target.value)}
+                        >
+                          <option value="">理由を選択してください</option>
+                          {CANCEL_REQUEST_REASON_OPTIONS.map((reason) => (
+                            <option key={reason} value={reason}>{reason}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor={`cancel-note-${reservation.id}`}>補足内容</label>
+                        <p className="form-hint">店舗へ伝えたい内容があれば入力してください。</p>
+                        <textarea
+                          id={`cancel-note-${reservation.id}`}
+                          rows={4}
+                          placeholder="例：急用のため行けなくなりました"
+                          value={cancelRequestNote}
+                          onChange={(event) => setCancelRequestNote(event.target.value)}
+                        />
+                      </div>
+                      <div className="shop-form-actions">
+                        <button type="submit" className="button-danger" disabled={submittingCancelRequestId === reservation.id}>
+                          {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼を送信'}
+                        </button>
+                        <button type="button" className="button-secondary" disabled={submittingCancelRequestId === reservation.id} onClick={closeCancelRequestForm}>
+                          閉じる
+                        </button>
+                      </div>
+                    </form>
                   ) : (
                     <>
                       <p className="form-hint">
@@ -447,7 +504,7 @@ export function ReservationCheckPage() {
                         type="button"
                         className="button-secondary"
                         disabled={submittingCancelRequestId === reservation.id}
-                        onClick={() => { void handleCancelRequest(reservation); }}
+                        onClick={() => { openCancelRequestForm(reservation); }}
                       >
                         {submittingCancelRequestId === reservation.id ? '送信中...' : 'キャンセル依頼'}
                       </button>
