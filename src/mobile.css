@@ -358,7 +358,8 @@
   line-height: 1.6;
 }
 
-.admin-color-legend-panel {
+.admin-color-legend-panel,
+.reservation-status-legend-panel {
   border: 1px solid #e5e7eb;
   background: #ffffff;
   border-radius: 12px;
@@ -367,17 +368,20 @@
   gap: 0.65rem;
 }
 
-.admin-color-legend-panel strong {
+.admin-color-legend-panel strong,
+.reservation-status-legend-panel strong {
   color: #1f2937;
 }
 
-.admin-color-legend-list {
+.admin-color-legend-list,
+.reservation-status-legend-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem 0.9rem;
 }
 
-.admin-color-legend-list span {
+.admin-color-legend-list span,
+.reservation-status-legend-list span {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -406,6 +410,10 @@
 
 .legend-dot-yellow {
   background: #f59e0b;
+}
+
+.legend-dot-green {
+  background: #16a34a;
 }
 
 .admin-filter-reset-panel {
@@ -440,7 +448,8 @@
 
   .admin-date-shortcut-actions,
   .admin-status-shortcut-actions,
-  .admin-color-legend-list {
+  .admin-color-legend-list,
+  .reservation-status-legend-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
@@ -458,7 +467,8 @@
   .nav-list,
   .admin-date-shortcut-actions,
   .admin-status-shortcut-actions,
-  .admin-color-legend-list {
+  .admin-color-legend-list,
+  .reservation-status-legend-list {
     grid-template-columns: 1fr;
   }
 
