@@ -27,6 +27,7 @@ import { setupAdminDetailListBack } from './adminDetailListBack';
 import { setupAdminDetailGuide } from './adminDetailGuide';
 import { setupAdminDetailChecklist } from './adminDetailChecklist';
 import { setupAdminContactCopy } from './adminContactCopy';
+import { setupAdminMemoTemplate } from './adminMemoTemplate';
 import './styles.css';
 import './mobile.css';
 
@@ -52,6 +53,7 @@ setupAdminDetailListBack();
 setupAdminDetailGuide();
 setupAdminDetailChecklist();
 setupAdminContactCopy();
+setupAdminMemoTemplate();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
