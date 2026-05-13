@@ -198,7 +198,8 @@
   background: linear-gradient(90deg, #f5f3ff 0%, #fff1f2 100%);
 }
 
-.admin-reservation-guide-panel {
+.admin-reservation-guide-panel,
+.reservation-check-guide-panel {
   border: 1px solid #93c5fd;
   background: #eff6ff;
   color: #1e3a8a;
@@ -206,20 +207,23 @@
   padding: 0.9rem 1rem;
 }
 
-.admin-reservation-guide-panel strong {
+.admin-reservation-guide-panel strong,
+.reservation-check-guide-panel strong {
   display: block;
   margin-bottom: 0.45rem;
   font-size: 1rem;
 }
 
-.admin-reservation-guide-panel ol {
+.admin-reservation-guide-panel ol,
+.reservation-check-guide-panel ol {
   margin: 0;
   padding-left: 1.2rem;
   display: grid;
   gap: 0.25rem;
 }
 
-.admin-reservation-guide-panel li {
+.admin-reservation-guide-panel li,
+.reservation-check-guide-panel li {
   line-height: 1.6;
 }
 
