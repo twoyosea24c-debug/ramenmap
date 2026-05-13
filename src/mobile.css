@@ -387,6 +387,32 @@
   font-size: 0.85rem;
 }
 
+.admin-memo-template-panel {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-memo-template-panel strong {
+  color: #374151;
+}
+
+.admin-memo-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-memo-template-button {
+  width: auto;
+  min-height: 38px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.9rem;
+}
+
 .admin-after-action-message {
   border: 1px solid #a7f3d0;
   background: #ecfdf5;
@@ -496,7 +522,8 @@
   .admin-date-shortcut-actions,
   .admin-status-shortcut-actions,
   .admin-color-legend-list,
-  .reservation-status-legend-list {
+  .reservation-status-legend-list,
+  .admin-memo-template-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
@@ -516,7 +543,8 @@
     width: 100%;
   }
 
-  .admin-contact-copy-button {
+  .admin-contact-copy-button,
+  .admin-memo-template-button {
     width: 100%;
     min-height: 44px;
   }
@@ -527,7 +555,8 @@
   .admin-date-shortcut-actions,
   .admin-status-shortcut-actions,
   .admin-color-legend-list,
-  .reservation-status-legend-list {
+  .reservation-status-legend-list,
+  .admin-memo-template-actions {
     grid-template-columns: 1fr;
   }
 
