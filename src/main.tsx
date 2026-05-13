@@ -19,6 +19,7 @@ import { setupAdminFilterReset } from './adminFilterReset';
 import { setupAdminStatusShortcuts } from './adminStatusShortcuts';
 import { setupAdminPriorityGuide } from './adminPriorityGuide';
 import { setupReservationCheckGuide } from './reservationCheckGuide';
+import { setupAdminDetailReload } from './adminDetailReload';
 import './styles.css';
 import './mobile.css';
 
@@ -36,6 +37,7 @@ setupAdminFilterReset();
 setupAdminStatusShortcuts();
 setupAdminPriorityGuide();
 setupReservationCheckGuide();
+setupAdminDetailReload();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
