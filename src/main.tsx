@@ -25,6 +25,7 @@ import { setupReservationInputHelp } from './reservationInputHelp';
 import { setupReservationStatusLegend } from './reservationStatusLegend';
 import { setupAdminDetailListBack } from './adminDetailListBack';
 import { setupAdminDetailGuide } from './adminDetailGuide';
+import { setupAdminDetailChecklist } from './adminDetailChecklist';
 import './styles.css';
 import './mobile.css';
 
@@ -48,6 +49,7 @@ setupReservationInputHelp();
 setupReservationStatusLegend();
 setupAdminDetailListBack();
 setupAdminDetailGuide();
+setupAdminDetailChecklist();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
