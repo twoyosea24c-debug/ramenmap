@@ -18,6 +18,7 @@ import { setupAdminColorLegend } from './adminColorLegend';
 import { setupAdminFilterReset } from './adminFilterReset';
 import { setupAdminStatusShortcuts } from './adminStatusShortcuts';
 import { setupAdminPriorityGuide } from './adminPriorityGuide';
+import { setupReservationCheckGuide } from './reservationCheckGuide';
 import './styles.css';
 import './mobile.css';
 
@@ -34,6 +35,7 @@ setupAdminColorLegend();
 setupAdminFilterReset();
 setupAdminStatusShortcuts();
 setupAdminPriorityGuide();
+setupReservationCheckGuide();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
