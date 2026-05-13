@@ -21,6 +21,7 @@ import { setupAdminPriorityGuide } from './adminPriorityGuide';
 import { setupReservationCheckGuide } from './reservationCheckGuide';
 import { setupAdminDetailReload } from './adminDetailReload';
 import { setupReservationResultReload } from './reservationResultReload';
+import { setupReservationInputHelp } from './reservationInputHelp';
 import './styles.css';
 import './mobile.css';
 
@@ -40,6 +41,7 @@ setupAdminPriorityGuide();
 setupReservationCheckGuide();
 setupAdminDetailReload();
 setupReservationResultReload();
+setupReservationInputHelp();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
