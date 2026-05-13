@@ -373,6 +373,20 @@
   width: auto;
 }
 
+.admin-contact-copy-value {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.admin-contact-copy-button {
+  min-height: 34px;
+  width: auto;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}
+
 .admin-after-action-message {
   border: 1px solid #a7f3d0;
   background: #ecfdf5;
@@ -492,6 +506,17 @@
   .admin-status-shortcut-actions .button-primary,
   .admin-status-shortcut-actions .button-secondary,
   .admin-detail-checklist-reset-button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .admin-contact-copy-value {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .admin-contact-copy-button {
     width: 100%;
     min-height: 44px;
   }
