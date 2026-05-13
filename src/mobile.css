@@ -340,6 +340,30 @@
   font-weight: 700;
 }
 
+.admin-detail-checklist-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-detail-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid #bbf7d0;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  color: #14532d;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.admin-detail-checklist-item input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
 .admin-after-action-message {
   border: 1px solid #a7f3d0;
   background: #ecfdf5;
